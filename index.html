@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="pt">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0a090d" />
-    <meta name="description" content="Networks are awesome!! — um diário visual de Social Network Analysis." />
+    <meta name="description" content="Networks are awesome!! — the weekly blog for Social Graphs and Interactions." />
     <title>Networks are awesome!!</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,14 +14,14 @@
   <body>
     <div class="grain" aria-hidden="true"></div>
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="Networks are awesome!! - início">
+      <a class="brand" href="#top" aria-label="Networks are awesome!! - home">
         <span class="brand-mark">N<span>/</span>A</span>
         <span class="brand-name">Networks<br /><em>are awesome!!</em></span>
       </a>
-      <nav class="nav" aria-label="Navegação principal">
+      <nav class="nav" aria-label="Main navigation">
         <a href="#graph">THE GRAPH</a>
+        <a href="#about">ABOUT THIS PROJECT</a>
         <a href="#posts">DISPATCHES</a>
-        <a href="#about">ABOUT US</a>
       </nav>
       <a class="issue-tag" href="#posts">VOL. 01 <span>→</span></a>
     </header>
@@ -29,33 +29,33 @@
     <main id="top">
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p class="eyebrow"><span class="eyebrow-dot"></span> SOCIAL NETWORK ANALYSIS / 2026—27</p>
+          <p class="eyebrow"><span class="eyebrow-dot"></span> Social Graphs and Interactions / 2026—27</p>
           <h1 id="hero-title">Networks<br /><span>are</span> <strong>awesome!!</strong></h1>
-          <p class="hero-intro">Um laboratório visual para perceber as ligações que nos ligam. Pessoas, ideias e dados — todos os pontos contam.</p>
-          <a class="button button-primary" href="#graph">EXPLORAR O GRAFO <span>↗</span></a>
+          <p class="hero-intro">A visual lab for understanding the connections that link us. People, ideas and data — every point counts.</p>
+          <a class="button button-primary" href="#graph">EXPLORE THE GRAPH <span>↗</span></a>
         </div>
-        <div class="hero-visual" id="graph" aria-label="Grafo interativo de relações">
+        <div class="hero-visual" id="graph" aria-label="Interactive graph of relationships">
           <div class="graph-label graph-label-top">LIVE NETWORK <span>●</span></div>
           <div class="graph-label graph-label-bottom">MOVE YOUR CURSOR<br /><small>to perturb the field</small></div>
-          <svg id="network-svg" role="img" aria-label="Visualização interativa de uma rede de nós e arestas"></svg>
+          <svg id="network-svg" role="img" aria-label="Interactive visualization of Marvel superhero nodes and edges"></svg>
           <div class="burst burst-one">?</div>
           <div class="burst burst-two">↗</div>
         </div>
         <div class="hero-sticker">NO<br />NODE<br />LEFT<br />BEHIND</div>
       </section>
 
-      <section class="ticker" aria-label="Temas do grupo">
+      <section class="ticker" aria-label="Network science topics">
         <div class="ticker-track">
-          <span>HOMOPHILY</span><b>✦</b><span>COMMUNITIES</span><b>✦</b><span>INFLUENCE</span><b>✦</b><span>BRIDGES</span><b>✦</b><span>HOMOPHILY</span><b>✦</b><span>COMMUNITIES</span><b>✦</b>
+          <span>DEGREE DISTRIBUTION</span><b>✦</b><span>ISOLATED NODES</span><b>✦</b><span>BETWEENNESS</span><b>✦</b><span>WEAK TIES</span><b>✦</b><span>PATHS</span><b>✦</b><span>DEGREE DISTRIBUTION</span><b>✦</b>
         </div>
       </section>
 
       <section class="intro-grid" id="about">
-        <div class="section-kicker">01 / WHY NETWORKS?</div>
-        <div class="intro-statement">Nenhum nó<br />existe <span>sozinho.</span></div>
+        <div class="section-kicker">01 / ABOUT THIS PROJECT</div>
+        <div class="intro-statement">No node<br />exists <span>alone.</span></div>
         <div class="intro-detail">
-          <p>Somos um grupo a estudar sistemas complexos através das relações entre as suas partes. Aqui partilhamos perguntas, métodos e pequenas descobertas semana a semana.</p>
-          <a class="text-link" href="#posts">LER OS DISPATCHES <span>↘</span></a>
+          <p>This is the weekly blog for our group in the <strong>Social Graphs and Interactions</strong> course. Each week, we apply a new network-analysis tool to a shared dataset: the Marvel Comics superheroes Wikipedia network, then write up what we find.</p>
+          <a class="text-link" href="#posts">READ THE DISPATCHES <span>↘</span></a>
         </div>
       </section>
 
@@ -65,7 +65,7 @@
             <div class="section-kicker">02 / FIELD NOTES</div>
             <h2 id="posts-title">Dispatches<span>.</span></h2>
           </div>
-          <p class="posts-aside">Uma entrada.<br />Todas as semanas.<br /><em>Sem filtros.</em></p>
+          <p class="posts-aside">One entry.<br />Every week.<br /><em>No filters.</em></p>
         </div>
         <div class="posts-list" id="posts-list"></div>
       </section>
@@ -73,8 +73,8 @@
 
     <footer class="site-footer">
       <div class="footer-brand">N<span>/</span>A</div>
-      <p>Feito com dados, curiosidade<br />e demasiadas setas.</p>
-      <div class="footer-meta">SGI · 2026—27<br /><a href="#top">VOLTAR AO TOPO ↑</a></div>
+      <p>Made with data, curiosity<br />and too many arrows.</p>
+      <div class="footer-meta">Social Graphs and Interactions · 2026—27<br /><a href="#top">BACK TO TOP ↑</a></div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>

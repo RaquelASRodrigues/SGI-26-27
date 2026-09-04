@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Week 1 — degree distributions in the Marvel superheroes Wikipedia network." />
+    <title>Every node has a story · Networks are awesome!!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      .post-page { max-width: 1040px; margin: 0 auto; padding: 95px 8vw 130px; }
+      .post-page-header { max-width: 800px; border-bottom: 1px solid var(--line); padding-bottom: 42px; }
+      .post-page h1 { margin: 28px 0 20px; font-size: clamp(50px, 9vw, 112px); }
+      .post-dek { color: #c9bdcc; font-size: 18px; line-height: 1.5; max-width: 650px; }
+      .post-body { max-width: 720px; margin: 60px auto 0; }
+      .post-body h2 { font-size: 36px; letter-spacing: -.05em; margin: 60px 0 18px; }
+      .post-body p { color: #c9bdcc; font-size: 16px; line-height: 1.65; }
+      .post-body strong { color: var(--paper); }
+      .key-figure { margin: 45px 0; }
+      .key-figure img { display: block; width: 100%; border: 1px solid rgba(189, 125, 255, .42); background: var(--ink); }
+      .key-figure figcaption { color: var(--muted); font: 10px/1.5 var(--mono); margin-top: 12px; }
+      .back-link { display: inline-block; color: var(--lilac); font: 11px var(--mono); border-bottom: 1px solid var(--lilac); padding-bottom: 5px; }
+      @media (max-width: 780px) { .post-page { padding: 60px 8vw 90px; } .post-body { margin-top: 40px; } .post-body h2 { font-size: 30px; } }
+    </style>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="../index.html" aria-label="Networks are awesome!! - home">
+        <span class="brand-mark">N<span>/</span>A</span>
+        <span class="brand-name">Networks<br /><em>are awesome!!</em></span>
+      </a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="../index.html#graph">THE GRAPH</a>
+        <a href="../index.html#about">ABOUT THIS PROJECT</a>
+        <a href="../index.html#posts">DISPATCHES</a>
+      </nav>
+      <a class="issue-tag" href="../index.html#posts">VOL. 01 <span>→</span></a>
+    </header>
+
+    <main class="post-page">
+      <header class="post-page-header">
+        <div class="section-kicker">WEEK 01 · DEGREE / DIRECTED GRAPHS</div>
+        <h1>Every node<br /><span>has a</span> story<span>.</span></h1>
+        <p class="post-dek">We start with the shape of the Marvel Comics superheroes Wikipedia network: who gets linked to, who links out, and what the whole degree distribution can tell us.</p>
+      </header>
+      <article class="post-body">
+        <h2>What we asked<span>.</span></h2>
+        <p>We wanted to know whether the network has a recognisable degree distribution, whether it changes when we look on linear and log–log scales, and how different the answers are for in-degree versus out-degree. In other words: who is linked to most, who links out most, and why might those be different people?</p>
+
+        <h2>What we did<span>.</span></h2>
+        <p>We loaded the 303 Marvel superhero nodes and 1,784 directed Wikipedia links into NetworkX. We computed total degree, in-degree, and out-degree for every node, identified weakly connected components, and compared the largest hubs with the isolated nodes that have no links at all.</p>
+
+        <figure class="key-figure">
+          <img src="../assets/week1/degree_dist_linear.png" alt="Histogram showing the total degree distribution on a linear scale" />
+          <figcaption>FIG. 01 — Total degree distribution on a linear scale. Most nodes sit in the 0–20 range; a handful of extreme hubs stretch the tail out past 100.</figcaption>
+        </figure>
+
+        <figure class="key-figure">
+          <img src="../assets/week1/degree_dist_loglog.png" alt="Total degree distribution plotted on log-log axes" />
+          <figcaption>FIG. 02 — The same distribution on log–log axes. Rather than a clean straight line, it rises to a small peak around degree 5–8 before decaying into a long tail — a sign that Wikipedia's category curation sets a rough floor on cross-referencing, except for a cluster of fully isolated pages at degree 0.</figcaption>
+        </figure>
+
+        <figure class="key-figure">
+          <img src="../assets/week1/in_vs_out_degree.png" alt="Scatter plot comparing in-degree and out-degree for each node" />
+          <figcaption>FIG. 03 — In-degree vs out-degree per node. The five highest total-degree hubs (highlighted) sit far out on the in-degree axis but are unremarkable on out-degree — the two rankings barely overlap.</figcaption>
+        </figure>
+
+        <figure class="key-figure">
+          <img src="../assets/week1/network_art.png" alt="Network visualization of the giant component of the Marvel superheroes Wikipedia graph" />
+          <figcaption>FIG. 04 — The giant component (277 of 303 nodes) of the Week 1 Marvel superheroes Wikipedia network, with the five highest total-degree hubs in magenta. 18 smaller components sit outside it, mostly isolated single pages.</figcaption>
+        </figure>
+
+        <h2>The numbers<span>.</span></h2>
+        <div class="stats-tables">
+          <table class="stats-table">
+            <caption>Top 5 by in-degree</caption>
+            <thead>
+              <tr><th>Rank</th><th>Character</th><th>In-degree</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>Spider-Man</td><td>106</td></tr>
+              <tr><td>2</td><td>Hulk</td><td>64</td></tr>
+              <tr><td>3</td><td>Wolverine</td><td>60</td></tr>
+              <tr><td>4</td><td>Doctor Strange</td><td>50</td></tr>
+              <tr><td>5</td><td>Deadpool</td><td>33</td></tr>
+            </tbody>
+          </table>
+          <table class="stats-table">
+            <caption>Top 5 by out-degree</caption>
+            <thead>
+              <tr><th>Rank</th><th>Character</th><th>Out-degree</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>Betsy Braddock</td><td>28</td></tr>
+              <tr><td>2</td><td>Cloak and Dagger</td><td>24</td></tr>
+              <tr><td>3</td><td>Adam Warlock</td><td>22</td></tr>
+              <tr><td>4</td><td>Venom</td><td>21</td></tr>
+              <tr><td>5</td><td>She-Hulk</td><td>20</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>What surprised us<span>.</span></h2>
+        <p>We expected in-degree and out-degree to roughly agree, but the two rankings barely overlap. The five most-linked-to characters — Spider-Man, Hulk, Wolverine, Doctor Strange, Deadpool — are exactly the mainstream, culturally dominant heroes we'd guess: other pages cite them constantly, in team rosters, "created by" notes, or passing references. The five characters who link out to others the most — Betsy Braddock, Cloak and Dagger, Adam Warlock, Venom, She-Hulk — are a completely different, comparatively niche group, and none of them crack the in-degree top five. Out-degree, it turns out, says more about how an article happens to be written — long histories of teams, family ties, and alternate identities packed with wikilinks — than about how famous a character is; in-degree says more about cultural gravity: who everyone else feels the need to mention.</p>
+        <p>The log–log plot reinforced that this isn't a textbook clean power law. It rises from degree 1 to a small peak around degree 5–8 before decaying into a long tail that stretches all the way to Spider-Man's 115. That peak-then-tail shape, together with 17 completely isolated nodes sitting at degree 0, suggests Wikipedia's curation of the category sets a rough floor: most pages that end up in "Marvel Comics superheroes" pick up a handful of cross-references, but a notable minority — mostly the 18 tiny islands outside the giant component — never get linked to or from anyone else in the set at all.</p>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">N<span>/</span>A</div>
+      <p>Made with data, curiosity<br />and too many arrows.</p>
+      <div class="footer-meta">Social Graphs and Interactions · 2026—27<br /><a href="../index.html">BACK TO HOME ↑</a></div>
+    </footer>
+  </body>
+</html>

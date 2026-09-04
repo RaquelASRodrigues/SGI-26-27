@@ -1,15 +1,19 @@
 const posts = [
-  { date: "WEEK 01 · 14.09.26", type: "INTRO / METHODS", title: "Tudo começa com um ponto", summary: "Uma primeira aproximação aos grafos: como transformar uma pergunta sobre o mundo numa rede que podemos observar." },
-  { date: "WEEK 02 · 21.09.26", type: "FIELD NOTE", title: "A força de estar entre", summary: "Sobre pontes, betweenness e as pessoas que tornam possível uma conversa entre comunidades distantes." },
-  { date: "WEEK 03 · 28.09.26", type: "TOOLKIT", title: "Desenhar o invisível", summary: "Layouts, escolhas visuais e o que um grafo nos mostra — ou esconde — antes de sequer abrirmos os dados." },
-  { date: "WEEK 04 · 05.10.26", type: "CASE STUDY", title: "Quando a rede ganha voz", summary: "Seguimos rastos de informação para perceber como uma ideia muda quando passa de nó em nó." }
+  {
+    date: "WEEK 01 · 14.09.26",
+    type: "DEGREE / DIRECTED GRAPHS",
+    title: "Every node has a story",
+    summary: "This week we explore degree distributions — linear and log–log — then compare in-degree and out-degree: who is linked to most, who links out most, and why are those different people?"
+  }
 ];
 
 const postsList = document.querySelector("#posts-list");
 posts.forEach((post, index) => {
-  const article = document.createElement("article");
-  article.className = "post";
-  article.innerHTML = `
+  const link = document.createElement("a");
+  link.className = "post-link";
+  link.href = "posts/week1.html";
+  link.innerHTML = `
+    <article class="post">
     <div class="post-number">${String(index + 1).padStart(2, "0")}</div>
     <div>
       <div class="post-date">${post.date}</div>
@@ -21,61 +25,108 @@ posts.forEach((post, index) => {
       <div class="post-date">READ → 04 MIN</div>
     </div>
     <div class="post-arrow">↗</div>
+    </article>
   `;
-  postsList.appendChild(article);
+  postsList.appendChild(link);
 });
 
 const svg = d3.select("#network-svg");
 const visual = document.querySelector(".hero-visual");
-const colors = { person: "#bd7dff", idea: "#e84e83", bridge: "#f2eaf5" };
-const names = ["MARTA", "INES", "DIOGO", "BEA", "TOM", "RUI", "SNA", "DATA", "IDEA", "LINK", "NODE", "LAB", "JO", "ANA", "MIGUEL", "FLOW", "PONTO", "SOFIA"];
-const nodes = names.map((name, id) => ({ id, name, group: id % 7 === 0 ? "bridge" : id % 4 === 0 ? "idea" : "person", radius: id % 7 === 0 ? 8 : id % 3 === 0 ? 6 : 4 }));
-const links = [];
-for (let i = 0; i < nodes.length; i += 1) {
-  links.push({ source: i, target: (i + 1) % nodes.length });
-  if (i % 2 === 0) links.push({ source: i, target: (i + 5) % nodes.length });
-  if (i % 5 === 0) links.push({ source: i, target: (i + 9) % nodes.length });
-}
+const colors = { hub: "#e84e83", node: "#bd7dff", isolated: "#f2eaf5" };
+let graphData;
 
-function drawGraph() {
+function drawGraph(data) {
   const width = visual.clientWidth;
   const height = visual.clientHeight;
   svg.attr("viewBox", `0 0 ${width} ${height}`);
   svg.selectAll("*").remove();
 
-  const simulation = d3.forceSimulation(nodes)
-    .force("link", d3.forceLink(links).id(d => d.id).distance(58).strength(.7))
-    .force("charge", d3.forceManyBody().strength(-105))
+  const maxDegree = d3.max(data.nodes, node => node.in_degree + node.out_degree) || 1;
+  const radius = d3.scaleSqrt().domain([0, maxDegree]).range([2.5, 12]);
+  const simulation = d3.forceSimulation(data.nodes)
+    .force("link", d3.forceLink(data.edges).id(node => node.id).distance(34).strength(.42))
+    .force("charge", d3.forceManyBody().strength(-28))
     .force("center", d3.forceCenter(width / 2, height / 2))
-    .force("collide", d3.forceCollide().radius(d => d.radius + 9));
+    .force("collide", d3.forceCollide().radius(node => radius(node.in_degree + node.out_degree) + 3));
 
-  const link = svg.append("g").attr("stroke", "#a66be0").attr("stroke-opacity", .48)
-    .selectAll("line").data(links).join("line").attr("stroke-width", d => d.source.group === "bridge" ? 2 : 1);
-  const node = svg.append("g").selectAll("g").data(nodes).join("g").attr("cursor", "grab");
-  node.append("circle").attr("r", d => d.radius + 5).attr("fill", "none").attr("stroke", d => colors[d.group]).attr("stroke-opacity", .16);
-  node.append("circle").attr("r", d => d.radius).attr("fill", d => colors[d.group]);
-  node.append("circle").attr("r", 2).attr("fill", "#0a090d");
-  node.filter(d => d.radius > 7).append("text").text(d => d.name).attr("x", 12).attr("y", 4).attr("fill", "#f2eaf5").attr("font-family", "DM Mono").attr("font-size", "8px").attr("letter-spacing", "1px");
+  const link = svg.append("g")
+    .attr("stroke", "#a66be0")
+    .attr("stroke-opacity", .28)
+    .selectAll("line")
+    .data(data.edges)
+    .join("line")
+    .attr("stroke-width", .7);
+
+  const node = svg.append("g")
+    .selectAll("g")
+    .data(data.nodes)
+    .join("g")
+    .attr("cursor", "grab");
+
+  node.append("circle")
+    .attr("r", nodeData => radius(nodeData.in_degree + nodeData.out_degree) + 3)
+    .attr("fill", "none")
+    .attr("stroke", nodeData => nodeData.is_top5 ? colors.hub : colors.node)
+    .attr("stroke-opacity", .15);
+  node.append("circle")
+    .attr("r", nodeData => radius(nodeData.in_degree + nodeData.out_degree))
+    .attr("fill", nodeData => nodeData.is_top5 ? colors.hub : nodeData.in_degree + nodeData.out_degree === 0 ? colors.isolated : colors.node)
+    .attr("fill-opacity", nodeData => nodeData.in_degree + nodeData.out_degree === 0 ? .55 : .9);
+  node.filter(nodeData => nodeData.is_top5)
+    .append("text")
+    .text(nodeData => nodeData.name)
+    .attr("x", 14)
+    .attr("y", 4)
+    .attr("fill", "#f2eaf5")
+    .attr("font-family", "DM Mono")
+    .attr("font-size", "8px")
+    .attr("letter-spacing", "1px");
 
   node.call(d3.drag()
-    .on("start", (event, d) => { if (!event.active) simulation.alphaTarget(.3).restart(); d.fx = d.x; d.fy = d.y; })
-    .on("drag", (event, d) => { d.fx = event.x; d.fy = event.y; })
-    .on("end", (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
+    .on("start", (event, nodeData) => {
+      if (!event.active) simulation.alphaTarget(.25).restart();
+      nodeData.fx = nodeData.x;
+      nodeData.fy = nodeData.y;
+    })
+    .on("drag", (event, nodeData) => {
+      nodeData.fx = event.x;
+      nodeData.fy = event.y;
+    })
+    .on("end", (event, nodeData) => {
+      if (!event.active) simulation.alphaTarget(0);
+      nodeData.fx = null;
+      nodeData.fy = null;
+    }));
 
   svg.on("pointermove", event => {
     const [x, y] = d3.pointer(event);
-    simulation.force("mouse", d3.forceRadial(115, x, y).strength(.012));
-    simulation.alpha(.18).restart();
+    simulation.force("mouse", d3.forceRadial(105, x, y).strength(.009));
+    simulation.alpha(.12).restart();
   }).on("pointerleave", () => {
     simulation.force("mouse", null);
-    simulation.alpha(.12).restart();
+    simulation.alpha(.08).restart();
   });
 
   simulation.on("tick", () => {
-    link.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y);
-    node.attr("transform", d => `translate(${d.x},${d.y})`);
+    link.attr("x1", edge => edge.source.x).attr("y1", edge => edge.source.y)
+      .attr("x2", edge => edge.target.x).attr("y2", edge => edge.target.y);
+    node.attr("transform", nodeData => `translate(${nodeData.x},${nodeData.y})`);
   });
 }
 
-drawGraph();
-window.addEventListener("resize", drawGraph);
+fetch("data/graph.json")
+  .then(response => {
+    if (!response.ok) throw new Error(`Could not load graph data: ${response.status}`);
+    return response.json();
+  })
+  .then(data => {
+    graphData = data;
+    drawGraph(graphData);
+  })
+  .catch(error => {
+    console.error("The interactive graph could not be loaded.", error);
+  });
+
+window.addEventListener("resize", () => {
+  if (graphData) drawGraph(graphData);
+});

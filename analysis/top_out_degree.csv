@@ -1,0 +1,11 @@
+node_id,name,in_degree,out_degree,is_top5
+Betsy_Braddock,Betsy Braddock,7,28,False
+Cloak_and_Dagger_(characters),Cloak and Dagger (characters),11,24,False
+Adam_Warlock,Adam Warlock,8,22,False
+Venom_(character),Venom (character),17,21,False
+She-Hulk,She-Hulk,29,20,False
+U.S._Agent,U.S. Agent,6,20,False
+Deadpool,Deadpool,33,19,True
+Rachel_Summers,Rachel Summers,16,19,False
+Noh-Varr,Noh-Varr,4,18,False
+Doctor_Strange,Doctor Strange,50,17,True

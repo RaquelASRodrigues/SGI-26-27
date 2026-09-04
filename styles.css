@@ -70,6 +70,7 @@ h2 span { color: var(--magenta); }
 .posts-aside { font: 12px/1.35 var(--mono); color: var(--muted); margin: 0; text-align: right; }
 .posts-aside em { color: var(--lilac); }
 .posts-list { border-top: 1px solid var(--line); }
+.post-link { display: block; }
 .post { display: grid; grid-template-columns: 105px 1fr 190px 30px; gap: 30px; align-items: center; min-height: 148px; border-bottom: 1px solid var(--line); transition: background .25s, padding .25s; }
 .post:hover { background: rgba(189,125,255,.08); padding-left: 15px; padding-right: 15px; }
 .post-number { color: var(--magenta); font: 34px var(--display); }
@@ -78,6 +79,13 @@ h2 span { color: var(--magenta); }
 .post-summary { color: var(--muted); font-size: 12px; line-height: 1.4; margin: 8px 0 0; max-width: 500px; }
 .post-arrow { font-size: 24px; color: var(--lilac); transition: transform .2s; }
 .post:hover .post-arrow { transform: translate(5px, -5px); }
+.stats-tables { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px; margin: 35px 0 65px; }
+.stats-table { width: 100%; border-collapse: collapse; color: var(--paper); font-size: 13px; }
+.stats-table caption { color: var(--paper); font: 18px var(--display); letter-spacing: -.04em; text-align: left; text-transform: uppercase; margin-bottom: 14px; }
+.stats-table th { color: var(--magenta); font: 10px var(--mono); letter-spacing: .08em; text-align: left; text-transform: uppercase; padding: 0 0 10px; }
+.stats-table td { border-top: 1px solid var(--line); padding: 10px 0; }
+.stats-table td:first-child { color: var(--muted); width: 48px; }
+.stats-table td:last-child { color: var(--lilac); font: 13px var(--mono); text-align: right; }
 
 .site-footer { display: flex; align-items: center; justify-content: space-between; padding: 32px 4.5vw; background: var(--purple); color: var(--paper); }
 .footer-brand { font: 37px var(--display); letter-spacing: -.1em; }
@@ -103,6 +111,7 @@ h2 span { color: var(--magenta); }
   .post-title { font-size: 18px; }
   .post-summary { font-size: 11px; }
   .posts-aside { display: none; }
+  .stats-tables { grid-template-columns: 1fr; gap: 30px; margin-bottom: 50px; }
   .site-footer { gap: 15px; align-items: start; }
   .site-footer p { margin: 3px 0 0; }
   .footer-meta { font-size: 9px; }

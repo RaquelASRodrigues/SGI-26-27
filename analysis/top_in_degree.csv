@@ -1,0 +1,11 @@
+node_id,name,in_degree,out_degree,is_top5
+Spider-Man,Spider-Man,106,9,True
+Hulk,Hulk,64,10,True
+Wolverine_(character),Wolverine (character),60,17,True
+Doctor_Strange,Doctor Strange,50,17,True
+Deadpool,Deadpool,33,19,True
+She-Hulk,She-Hulk,29,20,False
+Scarlet_Witch,Scarlet Witch,28,14,False
+Black_Panther_(character),Black Panther (character),27,11,False
+Cyclops_(Marvel_Comics),Cyclops (Marvel Comics),26,11,False
+Luke_Cage,Luke Cage,25,9,False

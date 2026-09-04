@@ -1,0 +1,122 @@
+{
+  "giant_component_size": 277,
+  "island_count": 18,
+  "islands": [
+    {
+      "size": 9,
+      "nodes": [
+        "Backhand (character)",
+        "Blackthorn (character)",
+        "Radian (Morituri)",
+        "Scaredycat",
+        "Scatterbrain (Morituri)",
+        "Shear (character)",
+        "Snapdragon (Morituri)",
+        "Toxyn",
+        "Vyking"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Baymax"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Bird-Brain (Marvel Comics)"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Black Fox (Robert Paine)"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Brain Drain (character)"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Breeze Barton"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Captain Midlands"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Charcoal (comics)"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Father Time (Marvel Comics)"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Happy Sam Sawyer"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Hellfire (J. T. Slade)"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Illuminator (Marvel Comics)"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Miracleman (character)"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Ogre (Marvel Comics)"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Sean and Chris"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Solarman"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Super Rabbit"
+      ]
+    },
+    {
+      "size": 1,
+      "nodes": [
+        "Yo-Yo Rodriguez"
+      ]
+    }
+  ]
+}
