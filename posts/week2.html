@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Week 2 — models and null models for the Marvel superheroes Wikipedia network." />
+    <title>When Chance Gives Up · Networks are awesome!!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      .post-page { max-width: 1120px; margin: 0 auto; padding: 95px 8vw 130px; }
+      .post-page-header { max-width: 860px; border-bottom: 1px solid var(--line); padding-bottom: 42px; }
+      .post-page h1 { margin: 28px 0 20px; font-size: clamp(50px, 9vw, 112px); }
+      .post-dek { color: #c9bdcc; font-size: 18px; line-height: 1.5; max-width: 740px; }
+      .post-body { max-width: 920px; margin: 60px auto 0; }
+      .post-body h2 { font-size: clamp(32px, 5vw, 52px); letter-spacing: -.06em; margin: 80px 0 18px; }
+      .post-body h3 { color: var(--lilac); font: 25px var(--display); letter-spacing: -.04em; margin: 48px 0 12px; text-transform: uppercase; }
+      .post-body p { color: #c9bdcc; font-size: 16px; line-height: 1.65; max-width: 720px; }
+      .post-body strong { color: var(--paper); }
+      .widget { margin: 35px 0 55px; border: 1px solid rgba(189, 125, 255, .42); background: #110d19; padding: 20px; overflow: hidden; }
+      .widget-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
+      .widget-label { color: var(--lilac); font: 10px var(--mono); letter-spacing: .1em; }
+      .widget-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+      .widget-button, .friendship-search { border: 1px solid rgba(189, 125, 255, .5); background: transparent; color: var(--paper); font: 10px var(--mono); padding: 9px 11px; }
+      .widget-button { cursor: pointer; }
+      .widget-button.is-active, .widget-button:hover { background: var(--lilac); color: var(--ink); }
+      .chart-svg { display: block; width: 100%; height: 410px; overflow: hidden; }
+      .chart-axis path, .chart-axis line { stroke: rgba(242, 234, 245, .28); }
+      .chart-axis text, .chart-label { fill: var(--paper); font: 10px var(--mono); }
+      .chart-grid line { stroke: rgba(125, 46, 216, .28); }
+      .chart-grid path { display: none; }
+      .chart-legend { display: flex; flex-wrap: wrap; gap: 15px; color: var(--muted); font: 10px var(--mono); margin-top: 8px; }
+      .legend-dot { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; background: var(--lilac); }
+      .legend-dot.real { background: var(--magenta); }
+      .legend-dot.er { background: #21f3c6; }
+      .legend-dot.ba { background: var(--lilac); }
+      .tooltip { position: fixed; z-index: 30; pointer-events: none; max-width: 250px; padding: 9px 11px; background: var(--paper); color: var(--ink); font: 10px/1.4 var(--mono); opacity: 0; transition: opacity .15s; }
+      .friendship-layout { display: grid; grid-template-columns: 1.35fr .65fr; gap: 24px; }
+      .friendship-search { width: 100%; margin-bottom: 12px; outline: none; }
+      .friendship-search:focus { border-color: var(--magenta); }
+      .friendship-detail { color: var(--muted); font-size: 12px; line-height: 1.5; }
+      .friendship-detail strong { color: var(--paper); }
+      .neighbor-list { margin: 13px 0 0; padding: 0; list-style: none; }
+      .neighbor-list li { border-top: 1px solid var(--line); padding: 8px 0; color: var(--lilac); font: 10px var(--mono); }
+      .scoreboard-wrap { overflow-x: auto; }
+      .scoreboard { width: 100%; border-collapse: collapse; min-width: 760px; }
+      .scoreboard th { color: var(--magenta); font: 10px var(--mono); letter-spacing: .08em; text-align: left; text-transform: uppercase; padding: 0 10px 12px 0; }
+      .scoreboard td { border-top: 1px solid var(--line); color: #c9bdcc; padding: 12px 10px 12px 0; font-size: 13px; white-space: nowrap; }
+      .scoreboard td:not(:first-child) { font: 12px var(--mono); color: var(--lilac); }
+      .scoreboard td:last-child { white-space: normal; color: var(--muted); font-family: var(--body); min-width: 180px; }
+      .scoreboard tr:first-child td { color: var(--paper); }
+      .scoreboard td:first-child { color: var(--paper); font-weight: 700; }
+      .small-note { color: var(--muted); font: 10px/1.5 var(--mono); }
+      .interpretation { border-left: 3px solid var(--magenta); padding: 4px 0 4px 20px; margin-top: 35px; }
+      @media (max-width: 780px) {
+        .post-page { padding: 60px 8vw 90px; }
+        .post-body { margin-top: 40px; }
+        .widget { padding: 12px; margin-left: -4vw; margin-right: -4vw; }
+        .widget-heading { align-items: flex-start; flex-direction: column; }
+        .chart-svg { height: 330px; }
+        .friendship-layout { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="../index.html" aria-label="Networks are awesome!! - home">
+        <span class="brand-mark">N<span>/</span>A</span>
+        <span class="brand-name">Networks<br /><em>are awesome!!</em></span>
+      </a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="../index.html#graph">THE GRAPH</a>
+        <a href="../index.html#about">ABOUT THIS PROJECT</a>
+        <a href="../index.html#posts">DISPATCHES</a>
+      </nav>
+      <a class="issue-tag" href="../index.html#posts">VOL. 01 <span>→</span></a>
+    </header>
+
+    <main class="post-page">
+      <header class="post-page-header">
+        <div class="section-kicker">WEEK 02 · MODELS &amp; NULL MODELS</div>
+        <h1>When Chance<br /><span>Gives</span> Up<span>.</span></h1>
+        <p class="post-dek">Testing the Marvel Universe against Erdős–Rényi randomness, Barabási–Albert scale-free growth, Watts–Strogatz small worlds, and degree-preserving null models.</p>
+      </header>
+      <article class="post-body">
+        <h2>The Randomness Fallacy<span>.</span></h2>
+        <p>A CCDF asks a simple question: for degree k, what fraction of nodes have degree at least k? The directed curves separate incoming attention from outgoing editorial links, while the undirected curve collapses each character's neighbourhood into one degree. That distinction matters: popularity creates a heavy in-degree tail, while out-degree is shaped more by how much context an editor packs into an article.</p>
+        <p>The bands compare Marvel with repeated random draws. A tail that resembles a straight line on log–log axes cannot prove a power-law mechanism: finite-size effects, category curation, and a few hubs can create the same visual impression. We use the curve to compare models, not to claim that one plot reveals the network's origin story.</p>
+        <div class="widget">
+          <div class="widget-heading"><span class="widget-label">INTERACTIVE CCDF · LOG–LOG SURVIVAL CURVES</span><div class="widget-controls" id="ccdf-controls"></div></div>
+          <svg id="ccdf-svg" class="chart-svg" role="img" aria-label="Interactive complementary cumulative degree distribution chart"></svg>
+          <div class="chart-legend"><span><i class="legend-dot real"></i>Marvel (Real)</span><span><i class="legend-dot er"></i>ER Poisson Band</span><span><i class="legend-dot ba"></i>BA Band</span></div>
+        </div>
+
+        <h2>The Superhero Friendship Paradox<span>.</span></h2>
+        <p>Following a link does not sample heroes uniformly. A character with many neighbours is more likely to be encountered as somebody else's neighbour, so the average degree of a reached friend can exceed the average degree of a randomly chosen character. In our data, the average character degree is <strong id="mean-degree-copy">—</strong>.</p>
+        <p>The scatterplot puts each character's own degree on the x-axis and the average degree of its neighbours on the y-axis. Points above the diagonal are the heroes whose neighbourhood is, on average, more popular than they are; points below it beat the paradox. Search for a hero to inspect the highest-degree neighbours that pull the comparison upward.</p>
+        <div class="widget" id="friendship-widget">
+          <div class="friendship-layout"><svg id="friendship-svg" class="chart-svg" role="img" aria-label="Friendship paradox scatterplot"></svg><div><input class="friendship-search" id="friendship-search" type="search" placeholder="Search Spider-Man..." aria-label="Search for a hero" /><div class="friendship-detail" id="friendship-detail">Search for a character to inspect their highest-degree neighbours.</div></div></div>
+          <div class="chart-legend"><span><i class="legend-dot real"></i>Beats the paradox (degree &gt; neighbour average)</span><span><i class="legend-dot"></i>Neighbour average is higher</span></div>
+        </div>
+
+        <h2>The Null Model Shuffle<span>.</span></h2>
+        <p>We performed 160 degree-preserving double-edge swaps. Every shuffled network keeps the observed degree sequence, but rewires which nodes meet. That makes the comparison sharper than ER: if Marvel's clustering remains high after accounting for each node's degree, local triangles are not merely an artefact of the degree distribution.</p>
+        <p>The histogram shows the clustering coefficient from every shuffle. The vertical line is the observed Marvel value; its distance from the null mean is summarized by the z-score and empirical p-value.</p>
+        <div class="widget">
+          <div class="widget-heading"><span class="widget-label">160 DEGREE-PRESERVING SHUFFLES · CLUSTERING</span><span class="widget-label" id="null-stat"></span></div>
+          <svg id="null-model-svg" class="chart-svg" role="img" aria-label="Histogram of null model clustering values"></svg>
+        </div>
+
+        <h2>Model Scoreboard<span>.</span></h2>
+        <h3>Erdős–Rényi <span>· Random</span></h3>
+        <p>ER preserves the number of nodes and edges but otherwise forgets who connects to whom. It is a useful baseline for path length and random clustering, yet its maximum degree is far too small and its model has essentially no isolated structure at this density.</p>
+        <h3>Barabási–Albert <span>· Preferential Attachment</span></h3>
+        <p>BA grows by attaching new nodes to existing hubs, so it naturally produces a heavy tail and a much more plausible maximum degree. It still underestimates clustering and cannot reproduce the editorial directionality or the small islands outside Marvel's giant component.</p>
+        <h3>Watts–Strogatz <span>· Small World</span></h3>
+        <p>Watts–Strogatz starts with local lattice structure and rewires it. The normalized curves show the trade-off directly: a little rewiring can shorten paths while preserving clustering, but too much rewiring destroys the local cohesion that defines a small world.</p>
+        <div class="scoreboard-wrap"><table class="scoreboard" id="scoreboard-table"></table></div>
+        <div class="widget">
+          <div class="widget-heading"><span class="widget-label">WATTS–STROGATZ · NORMALIZED TRADE-OFF</span><span class="widget-label">C(q)/C(0) · L(q)/L(0)</span></div>
+          <svg id="ws-svg" class="chart-svg" role="img" aria-label="Watts-Strogatz normalized clustering and path length chart"></svg>
+          <div class="chart-legend"><span><i class="legend-dot real"></i>C(q)/C(0) — Normalized Clustering</span><span><i class="legend-dot er"></i>L(q)/L(0) — Normalized Path Length</span></div>
+        </div>
+
+        <h2>Growing Marvel vs Reality<span>.</span></h2>
+        <p>Preferential attachment gets the headline intuition right: hubs matter, and a growth model produces a much heavier degree tail than ER. But Marvel is also an edited, directed, culturally selective network. BA fails to reproduce the observed clustering, reciprocity, and isolated islands, so “the rich get richer” is only one ingredient in the network's history.</p>
+        <div class="interpretation"><p id="interpretation-copy" class="small-note"></p></div>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">N<span>/</span>A</div>
+      <p>Made with data, curiosity<br />and too many arrows.</p>
+      <div class="footer-meta">Social Graphs and Interactions · 2026—27<br /><a href="../index.html">BACK TO HOME ↑</a></div>
+    </footer>
+    <div class="tooltip" id="tooltip"></div>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="week2.js"></script>
+  </body>
+</html>

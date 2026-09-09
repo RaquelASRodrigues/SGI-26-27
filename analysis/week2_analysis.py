@@ -91,6 +91,43 @@ def summary(samples):
     return result
 
 
+def metric_summary(values):
+    values = [value for value in values if value is not None]
+    if not values:
+        return {"mean": None, "sd": None, "low": None, "high": None}
+    return {
+        "mean": float(np.mean(values)),
+        "sd": float(np.std(values, ddof=1)) if len(values) > 1 else 0.0,
+        "low": float(np.quantile(values, 0.1)),
+        "high": float(np.quantile(values, 0.9)),
+    }
+
+
+def top_hub_share(graph):
+    degrees = list(dict(graph.degree()).values())
+    total_degree = sum(degrees)
+    return float(max(degrees) / total_degree) if total_degree else 0.0
+
+
+def null_clustering_summary(samples, observed):
+    values = [value for value in samples if value is not None]
+    mean = float(np.mean(values)) if values else None
+    sd = float(np.std(values, ddof=1)) if len(values) > 1 else 0.0 if values else None
+    z_score = None if sd in (None, 0.0) else float((observed - mean) / sd)
+    empirical_p = (
+        float((sum(value >= observed for value in values) + 1) / (len(values) + 1))
+        if values
+        else None
+    )
+    return {
+        "mean": mean,
+        "sd": sd,
+        "z_score": z_score,
+        "empirical_p": empirical_p,
+        "runs": len(values),
+    }
+
+
 def ccdf(values):
     values = np.asarray([value for value in values if value > 0], dtype=int)
     if not len(values):
@@ -201,11 +238,15 @@ def main():
     ba_m = 5  # Mean degree is approximately 2m; 5 is the nearest standard BA setting.
 
     real_metrics = metrics(real_graph)
+    real_metrics["top_hub_share"] = top_hub_share(real_graph)
 
     er_graphs = [nx.gnm_random_graph(n, m, seed=SEED + index) for index in range(ER_RUNS)]
     ba_graphs = [nx.barabasi_albert_graph(n, ba_m, seed=SEED + 10_000 + index) for index in range(BA_RUNS)]
     er_metrics = [metrics(graph) for graph in er_graphs]
     ba_metrics = [metrics(graph) for graph in ba_graphs]
+    for metric_set, graphs in ((er_metrics, er_graphs), (ba_metrics, ba_graphs)):
+        for metric, graph in zip(metric_set, graphs):
+            metric["top_hub_share"] = top_hub_share(graph)
 
     ws_rows = []
     for q_index, q in enumerate(WS_Q_VALUES):
@@ -214,6 +255,8 @@ def main():
             for index in range(WS_RUNS)
         ]
         model_metrics = [metrics(graph) for graph in model_graphs]
+        for metric, graph in zip(model_metrics, model_graphs):
+            metric["top_hub_share"] = top_hub_share(graph)
         model_summary = summary(model_metrics)
         ws_rows.append(
             {
@@ -239,7 +282,10 @@ def main():
         nx.watts_strogatz_graph(n, ws_k, best_ws["q"], seed=SEED + 30_000 + index)
         for index in range(WS_RUNS)
     ]
-    best_ws_summary = summary([metrics(graph) for graph in best_ws_graphs])
+    best_ws_metric_samples = [metrics(graph) for graph in best_ws_graphs]
+    for metric, graph in zip(best_ws_metric_samples, best_ws_graphs):
+        metric["top_hub_share"] = top_hub_share(graph)
+    best_ws_summary = summary(best_ws_metric_samples)
 
     er_clustering, _ = null_samples(
         real_graph,
@@ -258,6 +304,72 @@ def main():
     out_degrees = [degree for _, degree in directed.out_degree()]
     undirected_degrees = list(dict(real_graph.degree()).values())
     maximum_degree = max(max(in_degrees), max(out_degrees), max(undirected_degrees))
+    ws_baseline = next(row for row in ws_rows if row["q"] == 0)
+    ws_normalized = []
+    baseline_samples = ws_baseline["samples"]
+    for row in ws_rows:
+        clustering_ratios = [
+            sample["clustering"] / baseline["clustering"]
+            if baseline["clustering"]
+            else None
+            for sample, baseline in zip(row["samples"], baseline_samples)
+        ]
+        path_ratios = [
+            sample["path_length"] / baseline["path_length"]
+            if baseline["path_length"]
+            else None
+            for sample, baseline in zip(row["samples"], baseline_samples)
+        ]
+        ws_normalized.append(
+            {
+                "q": row["q"],
+                "clustering_ratio": metric_summary(clustering_ratios),
+                "path_ratio": metric_summary(path_ratios),
+            }
+        )
+    er_null_summary = null_clustering_summary(er_clustering, real_metrics["clustering"])
+    degree_preserving_summary = null_clustering_summary(swapped_clustering, real_metrics["clustering"])
+    model_summaries = {
+        "er": summary(er_metrics),
+        "ws": best_ws_summary,
+        "ba": summary(ba_metrics),
+    }
+    model_closeness = {
+        "clustering": min(
+            (
+                (model, abs(metrics_summary["clustering"]["mean"] - real_metrics["clustering"]))
+                for model, metrics_summary in model_summaries.items()
+            ),
+            key=lambda item: item[1],
+        )[0],
+        "maximum_degree": min(
+            (
+                (model, abs(metrics_summary["max_degree"]["mean"] - real_metrics["max_degree"]))
+                for model, metrics_summary in model_summaries.items()
+            ),
+            key=lambda item: item[1],
+        )[0],
+        "path_length": min(
+            (
+                (model, abs(metrics_summary["path_length"]["mean"] - real_metrics["path_length"]))
+                for model, metrics_summary in model_summaries.items()
+            ),
+            key=lambda item: item[1],
+        )[0],
+    }
+    interpretation = {
+        "best_model_by_metric": model_closeness,
+        "marvel_clustering_exceeds_degree_preserving": bool(
+            real_metrics["clustering"] > degree_preserving_summary["mean"]
+        ),
+        "text": (
+            f"The {model_closeness['clustering'].upper()} model is closest to Marvel's observed clustering, "
+            f"the {model_closeness['maximum_degree'].upper()} model is closest for maximum degree, and the "
+            f"{model_closeness['path_length'].upper()} model is closest for path length. Marvel clustering "
+            f"{'exceeds' if real_metrics['clustering'] > degree_preserving_summary['mean'] else 'does not exceed'} "
+            "the degree-preserving null expectation."
+        ),
+    }
 
     output = {
         "metadata": {
@@ -288,6 +400,7 @@ def main():
             "undirected": {
                 "real": ccdf(undirected_degrees),
                 "poisson": poisson_ccdf(mean_degree, maximum_degree),
+                "er_band": band_ccdf(er_graphs, maximum_degree),
                 "ba_band": band_ccdf(ba_graphs, maximum_degree),
                 "isolates": int(np.sum(np.asarray(undirected_degrees) == 0)),
             },
@@ -298,13 +411,26 @@ def main():
             "ws": {"q": best_ws_metrics["q"], "metrics": best_ws_summary},
             "ba": summary(ba_metrics),
         },
-        "watts_strogatz": {"k": ws_k, "runs_per_q": WS_RUNS, "rows": ws_rows},
+        "watts_strogatz": {
+            "k": ws_k,
+            "runs_per_q": WS_RUNS,
+            "baseline_q": 0,
+            "rows": ws_rows,
+            "normalized": ws_normalized,
+        },
         "null_models": {
             "real_clustering": real_metrics["clustering"],
             "runs": NULL_RUNS,
-            "er": er_clustering,
-            "degree_preserving": swapped_clustering,
+            "er": {
+                "samples": er_clustering,
+                "summary": er_null_summary,
+            },
+            "degree_preserving": {
+                "samples": swapped_clustering,
+                "summary": degree_preserving_summary,
+            },
         },
+        "interpretation": interpretation,
         "friendship": build_friendship_data(real_graph, names),
     }
 

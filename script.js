@@ -1,9 +1,19 @@
 const posts = [
   {
-    date: "WEEK 01 · 14.09.26",
+    number: "02",
+    date: "WEEK 02 · 09.09.26",
+    type: "MODELS & NULL MODELS",
+    title: "When Chance Gives Up",
+    summary: "Testing Marvel against Erdős–Rényi, Barabási–Albert, Watts–Strogatz, and degree-preserving null shuffles to see what makes superhero networks unique.",
+    link: "posts/week2.html"
+  },
+  {
+    number: "01",
+    date: "WEEK 01 · 02.09.26",
     type: "DEGREE / DIRECTED GRAPHS",
     title: "Every node has a story",
-    summary: "This week we explore degree distributions — linear and log–log — then compare in-degree and out-degree: who is linked to most, who links out most, and why are those different people?"
+    summary: "Exploring in-degree vs out-degree distributions in the Marvel Universe.",
+    link: "posts/week1.html"
   }
 ];
 
@@ -11,10 +21,10 @@ const postsList = document.querySelector("#posts-list");
 posts.forEach((post, index) => {
   const link = document.createElement("a");
   link.className = "post-link";
-  link.href = "posts/week1.html";
+  link.href = post.link;
   link.innerHTML = `
     <article class="post">
-    <div class="post-number">${String(index + 1).padStart(2, "0")}</div>
+    <div class="post-number">${post.number}</div>
     <div>
       <div class="post-date">${post.date}</div>
       <h3 class="post-title">${post.title}</h3>
@@ -130,4 +140,3 @@ fetch("data/graph.json")
 window.addEventListener("resize", () => {
   if (graphData) drawGraph(graphData);
 });
-
