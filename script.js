@@ -130,3 +130,4 @@ fetch("data/graph.json")
 window.addEventListener("resize", () => {
   if (graphData) drawGraph(graphData);
 });
+
