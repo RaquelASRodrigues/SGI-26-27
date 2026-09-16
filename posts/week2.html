@@ -93,6 +93,7 @@
           <div class="widget-heading"><span class="widget-label">INTERACTIVE CCDF · LOG–LOG SURVIVAL CURVES</span><div class="widget-controls" id="ccdf-controls"></div></div>
           <svg id="ccdf-svg" class="chart-svg" role="img" aria-label="Interactive complementary cumulative degree distribution chart"></svg>
           <div class="chart-legend"><span><i class="legend-dot real"></i>Marvel (Real)</span><span><i class="legend-dot er"></i>ER Poisson Band</span><span><i class="legend-dot ba"></i>BA Band</span></div>
+          <p class="small-note">The in-degree and out-degree Poisson reference curves overlap because both directed degree means equal edges ÷ nodes.</p>
         </div>
 
         <h2>The Superhero Friendship Paradox<span>.</span></h2>
@@ -105,10 +106,11 @@
 
         <h2>The Null Model Shuffle<span>.</span></h2>
         <p>We performed 160 degree-preserving double-edge swaps. Every shuffled network keeps the observed degree sequence, but rewires which nodes meet. That makes the comparison sharper than ER: if Marvel's clustering remains high after accounting for each node's degree, local triangles are not merely an artefact of the degree distribution.</p>
-        <p>The histogram shows the clustering coefficient from every shuffle. The vertical line is the observed Marvel value; its distance from the null mean is summarized by the z-score and empirical p-value.</p>
+        <p>The histogram shows the clustering coefficient from every shuffle. The vertical line is the observed Marvel value; its distance from the null mean is summarized by the z-score and empirical p-value. Marvel's clustering is 0.307, versus 0.031 for ER (z ≈ 97) and 0.142 for the degree-preserving null (z ≈ 21); in both comparisons, no shuffled network reached the observed value, so p &lt; 1/161.</p>
         <div class="widget">
-          <div class="widget-heading"><span class="widget-label">160 DEGREE-PRESERVING SHUFFLES · CLUSTERING</span><span class="widget-label" id="null-stat"></span></div>
+          <div class="widget-heading"><span class="widget-label">160 NULL SHUFFLES · CLUSTERING</span><div class="widget-controls" id="null-controls"></div><span class="widget-label" id="null-stat"></span></div>
           <svg id="null-model-svg" class="chart-svg" role="img" aria-label="Histogram of null model clustering values"></svg>
+          <div class="chart-legend"><span><i class="legend-dot real"></i>Observed Marvel</span><span><i class="legend-dot"></i>Degree-preserving null</span><span><i class="legend-dot er"></i>ER null</span></div>
         </div>
 
         <h2>Model Scoreboard<span>.</span></h2>
@@ -120,7 +122,7 @@
         <p>Watts–Strogatz starts with local lattice structure and rewires it. The normalized curves show the trade-off directly: a little rewiring can shorten paths while preserving clustering, but too much rewiring destroys the local cohesion that defines a small world.</p>
         <div class="scoreboard-wrap"><table class="scoreboard" id="scoreboard-table"></table></div>
         <div class="widget">
-          <div class="widget-heading"><span class="widget-label">WATTS–STROGATZ · NORMALIZED TRADE-OFF</span><span class="widget-label">C(q)/C(0) · L(q)/L(0)</span></div>
+          <div class="widget-heading"><span class="widget-label">WATTS–STROGATZ · NORMALIZED TRADE-OFF</span><div class="widget-controls" id="ws-controls"></div><span class="widget-label" id="ws-q-label">q = —</span></div>
           <svg id="ws-svg" class="chart-svg" role="img" aria-label="Watts-Strogatz normalized clustering and path length chart"></svg>
           <div class="chart-legend"><span><i class="legend-dot real"></i>C(q)/C(0) — Normalized Clustering</span><span><i class="legend-dot er"></i>L(q)/L(0) — Normalized Path Length</span></div>
         </div>

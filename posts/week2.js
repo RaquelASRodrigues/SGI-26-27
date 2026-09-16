@@ -153,14 +153,30 @@ function renderFriendship(data) {
 
 function renderNullModel(data) {
   const svg = d3.select("#null-model-svg");
-  const samples = data.null_models.degree_preserving.samples;
   const observed = data.null_models.real_clustering;
-  const summary = data.null_models.degree_preserving.summary;
-  document.querySelector("#null-stat").textContent = `Z ${format(summary.z_score)} · P ${format(summary.empirical_p)}`;
+  const controls = d3.select("#null-controls");
+  let mode = "degree_preserving";
+  const modes = {
+    degree_preserving: "Degree-preserving",
+    er: "ER"
+  };
+  Object.entries(modes).forEach(([key, label]) => controls.append("button")
+    .attr("class", `widget-button${key === mode ? " is-active" : ""}`)
+    .text(label)
+    .on("click", function() {
+      mode = key;
+      controls.selectAll("button").classed("is-active", false);
+      d3.select(this).classed("is-active", true);
+      draw();
+    }));
+  function draw() {
+    const samples = data.null_models[mode].samples;
+    const summary = data.null_models[mode].summary;
+    document.querySelector("#null-stat").textContent = `Z ${format(summary.z_score)} · p < 1/161`;
   const margin = { top: 22, right: 20, bottom: 62, left: 64 };
   const frame = chartFrame(svg, margin);
   const bins = d3.bin().thresholds(18)(samples);
-  const x = d3.scaleLinear().domain([d3.min(samples), d3.max(samples)]).nice().range([0, frame.innerWidth]);
+  const x = d3.scaleLinear().domain([d3.min(samples), Math.max(d3.max(samples), observed)]).nice().range([0, frame.innerWidth]);
   const y = d3.scaleLinear().domain([0, d3.max(bins, bin => bin.length)]).nice().range([frame.innerHeight, 0]);
   addAxes(frame, x, y, "Average Clustering Coefficient (C)", "Frequency (Number of Shuffled Networks)", 5, 5);
   frame.plot.selectAll("rect").data(bins).join("rect").attr("x", bin => x(bin.x0) + 1).attr("y", bin => y(bin.length))
@@ -168,7 +184,9 @@ function renderNullModel(data) {
     .attr("fill", palette.lilac).attr("fill-opacity", .72);
   frame.plot.append("line").attr("x1", x(observed)).attr("x2", x(observed)).attr("y1", 0).attr("y2", frame.innerHeight)
     .attr("stroke", palette.magenta).attr("stroke-width", 2).attr("stroke-dasharray", "5 4");
-  frame.chart.append("text").attr("class", "chart-label").attr("x", Math.min(frame.innerWidth - 4, x(observed) + 6)).attr("y", 14).attr("fill", palette.magenta).text(`Real Marvel C = ${format(observed)} · Z ${format(summary.z_score)} · p ${format(summary.empirical_p)}`);
+  frame.chart.append("text").attr("class", "chart-label").attr("x", Math.min(frame.innerWidth - 4, x(observed) + 6)).attr("y", 14).attr("fill", palette.magenta).text(`Real Marvel C = ${format(observed)} · Z ${format(summary.z_score)} · p < 1/161`);
+  }
+  draw();
 }
 
 function renderScoreboard(data) {
@@ -178,7 +196,7 @@ function renderScoreboard(data) {
     [`WS (q=${data.scoreboard.ws.q})`, data.scoreboard.ws.metrics, "Best local-to-global trade-off"],
     ["BA", data.scoreboard.ba, "Gets hubs; misses clustering/islands"]
   ];
-  const fields = [["Clustering (C)", "clustering"], ["Path Length (L)", "path_length"], ["Max Degree", "max_degree"], ["Isolates", "isolates"]];
+  const fields = [["Clustering (C)", "clustering"], ["Path Length (L)", "path_length"], ["Giant Share", "giant_share"], ["Isolates", "isolates"], ["Max Degree", "max_degree"], ["Top-Hub Share", "top_hub_share"]];
   const table = d3.select("#scoreboard-table");
   table.append("thead").append("tr").selectAll("th").data(["Model", ...fields.map(field => field[0]), "Verdict"]).join("th").text(value => value);
   models.forEach(([name, metrics, verdict]) => {
@@ -192,6 +210,9 @@ function renderScoreboard(data) {
 function renderWs(data) {
   const svg = d3.select("#ws-svg");
   const rows = data.watts_strogatz.normalized;
+  const controls = d3.select("#ws-controls");
+  const qLabel = d3.select("#ws-q-label");
+  const slider = controls.append("input").attr("class", "q-slider").attr("type", "range").attr("min", 0).attr("max", rows.length - 1).attr("step", 1).attr("value", rows.findIndex(row => row.q === data.scoreboard.ws.q));
   const margin = { top: 22, right: 62, bottom: 62, left: 64 };
   const frame = chartFrame(svg, margin);
   const x = d3.scaleLog().domain([.001, 1]).range([0, frame.innerWidth]);
@@ -206,4 +227,12 @@ function renderWs(data) {
     frame.plot.append("path").datum(rows).attr("fill", color).attr("fill-opacity", .2).attr("d", area);
     frame.plot.append("path").datum(rows).attr("fill", "none").attr("stroke", color).attr("stroke-width", 2).attr("d", line);
   });
+  const marker = frame.plot.append("line").attr("stroke", palette.paper).attr("stroke-dasharray", "3 3").attr("y1", 0).attr("y2", frame.innerHeight);
+  function updateMarker() {
+    const row = rows[Number(slider.property("value"))];
+    qLabel.text(`q = ${row.q}`);
+    marker.attr("x1", x(Math.max(row.q, .001))).attr("x2", x(Math.max(row.q, .001)));
+  }
+  slider.on("input", updateMarker);
+  updateMarker();
 }

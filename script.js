@@ -1,5 +1,13 @@
 const posts = [
   {
+    number: "03",
+    date: "WEEK 03 · 16.09.26",
+    type: "CENTRALITY / NULL MODELS",
+    title: "The Surprising Ones",
+    summary: "Ranking Marvel character–centrality observations by z-score, then opening each candidate's complete centrality profile.",
+    link: "posts/week3.html"
+  },
+  {
     number: "02",
     date: "WEEK 02 · 09.09.26",
     type: "MODELS & NULL MODELS",

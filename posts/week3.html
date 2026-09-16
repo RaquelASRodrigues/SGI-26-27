@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Week 3 — the most surprising Marvel characters by centrality z-score." />
+    <title>The Surprising Ones · Networks are awesome!!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      .post-page { max-width: 1120px; margin: 0 auto; padding: 95px 8vw 130px; }
+      .post-page-header { max-width: 900px; border-bottom: 1px solid var(--line); padding-bottom: 42px; }
+      .post-page h1 { margin: 28px 0 20px; font-size: clamp(50px, 9vw, 112px); }
+      .post-dek, .post-body p { color: #c9bdcc; line-height: 1.6; }
+      .post-dek { font-size: 18px; max-width: 760px; }
+      .post-body { max-width: 980px; margin: 60px auto 0; }
+      .post-body h2 { font-size: clamp(32px, 5vw, 52px); letter-spacing: -.06em; margin: 80px 0 18px; }
+      .surprise-grid { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 24px; margin-top: 35px; }
+      .surprise-card { border: 1px solid rgba(189, 125, 255, .42); background: #110d19; padding: 20px; }
+      .surprise-controls { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 15px; }
+      .analysis-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-top: 30px; }
+      .analysis-control-group { display: flex; flex-wrap: wrap; gap: 8px; }
+      .surprise-button, .candidate { border: 1px solid rgba(189, 125, 255, .5); background: transparent; color: var(--paper); font: 10px var(--mono); }
+      .surprise-button { cursor: pointer; padding: 9px 11px; }
+      #metric-controls .surprise-button { border-color: rgba(232, 78, 131, .65); }
+      #metric-controls .surprise-button.is-active, #metric-controls .surprise-button:hover { background: var(--magenta); color: var(--ink); }
+      #order-controls .surprise-button { border-color: rgba(189, 125, 255, .65); }
+      #order-controls .surprise-button.is-active, #order-controls .surprise-button:hover { background: var(--lilac); color: var(--ink); }
+      .surprise-table { width: 100%; border-collapse: collapse; }
+      .surprise-table th { color: var(--magenta); font: 10px var(--mono); letter-spacing: .08em; text-align: left; text-transform: uppercase; padding: 0 10px 12px 0; }
+      .surprise-table td { border-top: 1px solid var(--line); padding: 12px 10px 12px 0; color: #c9bdcc; font-size: 13px; }
+      .surprise-table td:not(:first-child) { font: 12px var(--mono); color: var(--lilac); }
+      .surprise-table .focus td { background: rgba(232, 78, 131, .13); color: var(--paper); }
+      .surprise-table .focus td:last-child { color: var(--magenta); font-weight: 700; }
+      .candidate-heading { color: var(--lilac); font: 12px var(--display); letter-spacing: -.02em; margin: 0 0 12px; }
+      .candidate-list { display: grid; gap: 8px; }
+      .candidate { cursor: pointer; text-align: left; padding: 12px; line-height: 1.45; }
+      .candidate:hover, .candidate.is-selected { border-color: var(--magenta); background: rgba(232, 78, 131, .12); }
+      .candidate-rank { color: var(--magenta); font-weight: 700; margin-right: 6px; }
+      .candidate-z { display: block; color: var(--lilac); margin-top: 4px; }
+      .formula { border-left: 3px solid var(--magenta); padding: 4px 0 4px 20px; margin: 30px 0; color: var(--paper); font: 14px var(--mono); }
+      .small-note { color: var(--muted); font: 10px/1.5 var(--mono); }
+      @media (max-width: 780px) {
+        .post-page { padding: 60px 8vw 90px; }
+        .surprise-grid { grid-template-columns: 1fr; }
+        .surprise-controls { justify-content: flex-start; }
+        .surprise-card { padding: 12px; margin-left: -4vw; margin-right: -4vw; overflow-x: auto; }
+        .surprise-table { min-width: 650px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="../index.html" aria-label="Networks are awesome!! - home"><span class="brand-mark">N<span>/</span>A</span><span class="brand-name">Networks<br /><em>are awesome!!</em></span></a>
+      <nav class="nav" aria-label="Main navigation"><a href="../index.html#graph">THE GRAPH</a><a href="../index.html#about">ABOUT THIS PROJECT</a><a href="../index.html#posts">DISPATCHES</a></nav>
+      <a class="issue-tag" href="../index.html#posts">VOL. 01 <span>→</span></a>
+    </header>
+    <main class="post-page">
+      <header class="post-page-header">
+        <div class="section-kicker">WEEK 03 · 16.09.26 · CENTRALITY &amp; NULL MODELS</div>
+        <h1>The Surprising<br /><span>Ones</span><span>.</span></h1>
+        <p class="post-dek">Which Marvel characters are more — or less — central than an equivalent random network would expect? Rank the observations, then open a character to see their complete centrality profile.</p>
+      </header>
+      <article class="post-body">
+        <h2>Surprise is a relationship<span>.</span></h2>
+        <p>A centrality value only becomes interesting when it has a reference point. Here, the reference is 80 Erdős–Rényi graphs with the same number of nodes and edges as the undirected Marvel projection. We compare each real character–measure observation with that null distribution.</p>
+        <div class="formula">Z-score = (real centrality − null mean) / null SD</div>
+        <p>Positive z-scores mean higher centrality than expected under the null model. Negative z-scores mean lower centrality. The larger the absolute z-score, the more unusual the observation is relative to the null model.</p>
+
+        <div class="analysis-controls" aria-label="Centrality and ranking controls">
+          <div class="analysis-control-group" id="metric-controls" aria-label="Centrality measure">
+            <button class="surprise-button is-active" data-metric="Degree" type="button">DEGREE</button>
+            <button class="surprise-button" data-metric="Closeness" type="button">CLOSENESS</button>
+            <button class="surprise-button" data-metric="Betweenness" type="button">BETWEENNESS</button>
+            <button class="surprise-button" data-metric="PageRank" type="button">PAGERANK</button>
+          </div>
+          <div class="analysis-control-group" id="order-controls" aria-label="Ranking direction">
+            <button class="surprise-button is-active" data-mode="top" type="button">TOP 3</button>
+            <button class="surprise-button" data-mode="lowest" type="button">LOWEST 3</button>
+          </div>
+        </div>
+        <div class="surprise-grid">
+          <section class="surprise-card" aria-labelledby="detail-heading">
+            <div class="candidate-heading" id="detail-heading">SELECT A CANDIDATE</div>
+            <table class="surprise-table">
+              <thead><tr><th>Character</th><th>Centrality</th><th>Real value</th><th>Null mean</th><th>Null SD</th><th>Z-score</th></tr></thead>
+              <tbody id="detail-table"></tbody>
+            </table>
+          </section>
+          <aside class="surprise-card">
+            <h3 class="candidate-heading" id="candidate-heading">TOP 3 MOST SURPRISING</h3>
+            <div class="candidate-list" id="candidate-list"></div>
+            <p class="small-note">Ranked observations, not aggregate character scores.</p>
+          </aside>
+        </div>
+      </article>
+    </main>
+    <footer class="site-footer"><div class="footer-brand">N<span>/</span>A</div><p>Made with data, curiosity<br />and too many arrows.</p><div class="footer-meta">Social Graphs and Interactions · 2026—27<br /><a href="../index.html">BACK TO HOME ↑</a></div></footer>
+    <script src="week3.js"></script>
+  </body>
+</html>
