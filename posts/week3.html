@@ -126,6 +126,38 @@
       .path-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
       .path-option { border: 1px solid rgba(189, 125, 255, .5); background: transparent; color: var(--paper); cursor: pointer; font: 10px var(--mono); padding: 9px 11px; }
       .path-option:hover { background: var(--lilac); color: var(--ink); }
+      .clique-widget { margin-top: 100px; }
+      .clique-controls, .homophily-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 28px 0 18px; }
+      .clique-button, .homophily-button { border: 1px solid rgba(189, 125, 255, .55); background: transparent; color: var(--paper); cursor: pointer; font: 10px var(--mono); padding: 9px 11px; }
+      .clique-button.is-active, .clique-button:hover { background: var(--lilac); color: var(--ink); }
+      .homophily-button.is-active, .homophily-button:hover { background: var(--magenta); color: var(--ink); }
+      .clique-layout { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 24px; align-items: stretch; }
+      .clique-chart, .homophily-chart { width: 100%; display: block; border: 1px solid rgba(189, 125, 255, .42); background: #110d19; }
+      .clique-chart { min-height: 420px; }
+      .clique-link { stroke: rgba(189, 125, 255, .32); stroke-width: 1; }
+      .clique-node { fill: var(--magenta); stroke: #110d19; stroke-width: 3; }
+      .clique-label { fill: var(--paper); font: 10px var(--mono); }
+      .clique-summary, .homophily-summary { border-left: 3px solid var(--magenta); padding: 18px 20px; background: #110d19; }
+      .clique-summary h3, .homophily-summary h3 { margin: 0 0 14px; font: 22px var(--display); }
+      .clique-stats { display: grid; gap: 14px; margin: 0; }
+      .clique-stats dt { color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+      .clique-stats dd { margin: 4px 0 0; color: var(--lilac); font: 13px var(--mono); }
+      .clique-table { width: 100%; border-collapse: collapse; margin-top: 28px; }
+      .clique-table th { color: var(--magenta); font: 10px var(--mono); letter-spacing: .08em; text-align: left; text-transform: uppercase; padding: 0 10px 12px 0; }
+      .clique-table td { border-top: 1px solid var(--line); padding: 11px 10px 11px 0; color: #c9bdcc; font-size: 13px; }
+      .clique-table button { border: 0; padding: 0; background: none; color: var(--paper); cursor: pointer; font: inherit; }
+      .clique-table button:hover { color: var(--magenta); }
+      .homophily-widget { margin-top: 80px; }
+      .homophily-chart { height: 170px; }
+      .homophily-axis text, .homophily-label { fill: var(--paper); font: 10px var(--mono); }
+      .homophily-axis path, .homophily-axis line { stroke: rgba(242, 234, 245, .28); }
+      .homophily-dot { fill: var(--lilac); opacity: .78; }
+      .homophily-real { fill: var(--magenta); stroke: var(--paper); stroke-width: 1.5; }
+      .homophily-bars { display: grid; gap: 12px; margin: 18px 0; }
+      .homophily-bar-row { display: grid; grid-template-columns: 155px minmax(0, 1fr) 66px; gap: 10px; align-items: center; color: var(--paper); font: 11px var(--mono); }
+      .homophily-track { height: 10px; background: rgba(242, 234, 245, .12); }
+      .homophily-fill { height: 100%; background: var(--magenta); }
+      .homophily-bar-row.null .homophily-fill { background: var(--lilac); }
       @media (max-width: 780px) {
         .post-page { padding: 60px 8vw 90px; }
         .surprise-grid { grid-template-columns: 1fr; }
@@ -139,6 +171,10 @@
         .direction-controls { justify-content: flex-start; }
         .path-controls { grid-template-columns: 1fr; }
         .path-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .clique-layout { grid-template-columns: 1fr; }
+        .clique-chart { min-height: 360px; }
+        .clique-table { min-width: 650px; }
+        .homophily-bar-row { grid-template-columns: 125px minmax(0, 1fr) 55px; }
       }
     </style>
   </head>
@@ -242,6 +278,27 @@
           </div>
           <div id="path-detail" class="path-detail" hidden></div>
           <div id="path-insight" class="path-insight" hidden></div>
+        </section>
+        <section class="clique-widget" aria-labelledby="clique-heading">
+          <h2 id="clique-heading">Tight circles<span>.</span></h2>
+          <p><strong>Who knows everyone?</strong> A clique is the most uncompromising kind of group: every character is linked to every other character in it. Pick one of the largest circles to see its complete set of connections.</p>
+          <div class="clique-controls" id="clique-controls" aria-label="Clique selection"></div>
+          <div class="clique-layout">
+            <svg id="clique-chart" class="clique-chart" role="img" aria-label="Selected clique network"></svg>
+            <aside id="clique-summary" class="clique-summary" aria-live="polite"></aside>
+          </div>
+          <h3 class="candidate-heading">CLIQUES AT A GLANCE</h3>
+          <p class="small-note">A dominant team is not an exclusive label: characters may list multiple affiliations. Unknown infobox fields stay unknown.</p>
+          <div class="scoreboard-wrap"><table class="clique-table"><thead><tr><th>Clique</th><th>Size</th><th>Connections</th><th>Team</th><th>Decade</th></tr></thead><tbody id="clique-table-body"></tbody></table></div>
+        </section>
+
+        <section class="homophily-widget" aria-labelledby="homophily-heading">
+          <h2 id="homophily-heading">But is this pattern global<span>?</span></h2>
+          <p><strong>What makes characters connect?</strong> A clique is an extreme local pattern. Homophily asks whether similarly labelled characters connect more often across the whole network.</p>
+          <div class="homophily-controls" id="homophily-controls" aria-label="Homophily attribute selection"></div>
+          <div id="homophily-summary" class="homophily-summary" aria-live="polite"></div>
+          <svg id="homophily-chart" class="homophily-chart" role="img" aria-label="Observed homophily compared with randomized networks"></svg>
+          <p class="small-note">Each dot is one degree-preserving rewiring: the same characters and degrees, with different connections. Edges missing an attribute are excluded from that attribute's fraction.</p>
         </section>
       </article>
     </main>

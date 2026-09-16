@@ -704,3 +704,88 @@ fetch("../data/week3_centrality.json")
     detailTable.innerHTML = `<tr><td colspan="6">The Week 3 centrality data could not be loaded.</td></tr>`;
     console.error(error);
   });
+
+const cliqueControls = document.querySelector("#clique-controls");
+const cliqueChart = d3.select("#clique-chart");
+const cliqueSummary = document.querySelector("#clique-summary");
+const cliqueTable = document.querySelector("#clique-table-body");
+const homophilyControls = document.querySelector("#homophily-controls");
+const homophilySummary = document.querySelector("#homophily-summary");
+const homophilyChart = d3.select("#homophily-chart");
+let cliqueData;
+let selectedCliqueId;
+let selectedAttribute = "team";
+
+const cliqueCategory = (value, known, label) => value
+  ? `${label}: ${value.label} · ${value.count}/${value.of}${value.distinct > 1 ? ` · ${value.distinct} labels` : ""}`
+  : `${label}: — (${known} known)`;
+
+function renderClique(clique) {
+  const width = cliqueChart.node().clientWidth || 700;
+  const height = 420;
+  const center = { x: width / 2, y: height / 2 };
+  const radius = Math.min(width, height) * .31;
+  const members = clique.members.map((member, index) => ({ ...member, angle: -Math.PI / 2 + index * 2 * Math.PI / clique.members.length }));
+  const point = member => ({ x: center.x + radius * Math.cos(member.angle), y: center.y + radius * Math.sin(member.angle) });
+  cliqueChart.attr("viewBox", `0 0 ${width} ${height}`).selectAll("*").remove();
+  const svg = cliqueChart.append("g");
+  svg.append("text").attr("class", "clique-label").attr("x", 18).attr("y", 25).text(`CLIQUE ${String(clique.rank).padStart(2, "0")} · EVERY PAIR CONNECTED`);
+  svg.selectAll("line").data(d3.cross(members, members).filter(([a, b]) => a.id < b.id)).join("line")
+    .attr("class", "clique-link").attr("x1", d => point(d[0]).x).attr("y1", d => point(d[0]).y).attr("x2", d => point(d[1]).x).attr("y2", d => point(d[1]).y);
+  const nodes = svg.selectAll("g.member").data(members).join("g").attr("transform", d => `translate(${point(d).x},${point(d).y})`);
+  nodes.append("circle").attr("class", "clique-node").attr("r", 8);
+  nodes.append("text").attr("class", "clique-label").attr("x", d => Math.cos(d.angle) < -.15 ? -12 : 12).attr("y", 4)
+    .attr("text-anchor", d => Math.cos(d.angle) < -.15 ? "end" : "start").text(d => d.name);
+  const teamText = clique.team ? `${clique.team.label} appears for ${clique.team.count}/${clique.size} members${clique.team.distinct > 1 ? `; this clique mixes ${clique.team.distinct} listed teams.` : "."}` : "No reliable team affiliation was extracted for this clique.";
+  const overlap = clique.overlap ? ` Its closest displayed neighbour is Clique ${String(clique.overlap.rank).padStart(2, "0")} (${clique.overlap.count}/${clique.size} shared characters).` : "";
+  cliqueSummary.innerHTML = `<h3>CLIQUE ${String(clique.rank).padStart(2, "0")}</h3><dl class="clique-stats"><div><dt>Circle</dt><dd>${clique.size} CHARACTERS · ${clique.internal_edges} / ${clique.possible_edges} CONNECTIONS</dd></div><div><dt>Team</dt><dd>${cliqueCategory(clique.team, clique.team_known_members, "TEAM")}</dd></div><div><dt>Decade</dt><dd>${cliqueCategory(clique.decade, clique.decade_known_members, "DECADE")}</dd></div></dl><p>${teamText}${overlap}</p>`;
+}
+
+function renderCliqueTable() {
+  cliqueTable.replaceChildren();
+  cliqueData.cliques.cliques.forEach(clique => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><button type="button">${String(clique.rank).padStart(2, "0")}</button></td><td>${clique.size}</td><td>${clique.internal_edges} / ${clique.possible_edges}</td><td>${clique.team ? `${clique.team.label} · ${clique.team.count}/${clique.size}` : "—"}</td><td>${clique.decade ? `${clique.decade.label} · ${clique.decade.count}/${clique.size}` : "—"}</td>`;
+    tr.querySelector("button").addEventListener("click", () => selectClique(clique.id));
+    cliqueTable.appendChild(tr);
+  });
+}
+
+function selectClique(id) {
+  selectedCliqueId = id;
+  cliqueControls.querySelectorAll("button").forEach(button => button.classList.toggle("is-active", button.dataset.id === id));
+  renderClique(cliqueData.cliques.cliques.find(clique => clique.id === id));
+}
+
+function renderHomophily() {
+  const result = cliqueData.homophily[selectedAttribute];
+  const pct = value => `${(value * 100).toFixed(1)}%`;
+  const max = Math.max(result.real, result.null_mean) * 1.15;
+  homophilySummary.innerHTML = `<h3>${result.label.toUpperCase()}</h3><div class="homophily-bars"><div class="homophily-bar-row"><span>REAL NETWORK</span><div class="homophily-track"><div class="homophily-fill" style="width:${result.real / max * 100}%"></div></div><strong>${pct(result.real)}</strong></div><div class="homophily-bar-row null"><span>RANDOMIZED</span><div class="homophily-track"><div class="homophily-fill" style="width:${result.null_mean / max * 100}%"></div></div><strong>${pct(result.null_mean)} ± ${(result.null_sd * 100).toFixed(1)}</strong></div></div><p><strong>Z = ${formatZ(result.z)}.</strong> ${result.kind[0].toUpperCase() + result.kind.slice(1)} occurs more often than expected under degree-preserving rewiring. ${result.coverage.known_nodes}/${result.coverage.total_nodes} characters and ${result.valid_edges} eligible edges have known values.</p>`;
+  const width = homophilyChart.node().clientWidth || 820, height = 170, margin = { top: 25, right: 28, bottom: 35, left: 28 };
+  const x = d3.scaleLinear().domain([0, Math.max(result.real, d3.max(result.null_distribution)) * 1.12]).range([margin.left, width - margin.right]);
+  homophilyChart.attr("viewBox", `0 0 ${width} ${height}`).selectAll("*").remove();
+  homophilyChart.append("g").attr("class", "homophily-axis").attr("transform", `translate(0,${height - margin.bottom})`).call(d3.axisBottom(x).ticks(5).tickFormat(d => `${(d * 100).toFixed(0)}%`));
+  homophilyChart.selectAll("circle.null").data(result.null_distribution).join("circle").attr("class", "homophily-dot").attr("cx", d => x(d)).attr("cy", (_, i) => 88 + ((i * 17) % 35)).attr("r", 3.5);
+  homophilyChart.append("line").attr("x1", x(result.null_mean)).attr("x2", x(result.null_mean)).attr("y1", 25).attr("y2", 130).attr("stroke", "#bD7Dff").attr("stroke-width", 2);
+  homophilyChart.append("circle").attr("class", "homophily-real").attr("cx", x(result.real)).attr("cy", 62).attr("r", 6);
+  homophilyChart.append("text").attr("class", "homophily-label").attr("x", x(result.real)).attr("y", 45).attr("text-anchor", "middle").text(`REAL ${pct(result.real)}`);
+  homophilyChart.append("text").attr("class", "homophily-label").attr("x", x(result.null_mean)).attr("y", 150).attr("text-anchor", "middle").text(`NULL MEAN ${pct(result.null_mean)}`);
+}
+
+fetch("../data/week3_cliques_homophily.json")
+  .then(response => { if (!response.ok) throw new Error(`Could not load clique data: ${response.status}`); return response.json(); })
+  .then(loaded => {
+    cliqueData = loaded;
+    loaded.cliques.cliques.forEach(clique => {
+      const button = document.createElement("button"); button.type = "button"; button.className = "clique-button"; button.dataset.id = clique.id; button.textContent = `CLIQUE ${String(clique.rank).padStart(2, "0")}`;
+      button.addEventListener("click", () => selectClique(clique.id)); cliqueControls.appendChild(button);
+    });
+    Object.entries(loaded.homophily).forEach(([key, value]) => {
+      const button = document.createElement("button"); button.type = "button"; button.className = "homophily-button"; button.dataset.attribute = key; button.textContent = value.label.toUpperCase();
+      button.addEventListener("click", () => { selectedAttribute = key; homophilyControls.querySelectorAll("button").forEach(item => item.classList.toggle("is-active", item === button)); renderHomophily(); }); homophilyControls.appendChild(button);
+    });
+    selectedAttribute = Object.keys(loaded.homophily)[0]; homophilyControls.querySelector("button").classList.add("is-active");
+    renderCliqueTable(); selectClique(loaded.cliques.cliques[0].id); renderHomophily();
+  })
+  .catch(error => { cliqueSummary.innerHTML = "<h3>DATA UNAVAILABLE</h3><p>The clique and homophily dataset could not be loaded.</p>"; console.error(error); });
