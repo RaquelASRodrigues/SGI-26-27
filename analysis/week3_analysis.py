@@ -25,11 +25,14 @@ NULL_RUNS = 80
 def load_graph():
     nodes = pd.read_csv(NODES_PATH, sep="\t", comment="#", quoting=3)
     edges = read_edges(DATA_DIR / "week1_edges.tsv")
-    names = nodes.set_index("node_id")["name"].to_dict()
+    info = nodes.set_index("node_id")[["name", "description"]].to_dict("index")
     graph = nx.Graph()
     graph.add_nodes_from(nodes["node_id"])
     graph.add_edges_from(edges.itertuples(index=False, name=None))
-    return graph, names
+    directed = nx.DiGraph()
+    directed.add_nodes_from(nodes["node_id"])
+    directed.add_edges_from(edges.itertuples(index=False, name=None))
+    return graph, directed, info
 
 
 def centralities(graph):
@@ -41,8 +44,104 @@ def centralities(graph):
     }
 
 
+def fragmentation_rows(graph, names, betweenness):
+    original_size = graph.number_of_nodes()
+    original_giant_size = len(max(nx.connected_components(graph), key=len))
+    rows = []
+    for node_id in graph.nodes:
+        reduced = graph.copy()
+        reduced.remove_node(node_id)
+        giant_after = len(max(nx.connected_components(reduced), key=len)) if reduced else 0
+        rows.append({
+            "id": node_id,
+            "character": names[node_id],
+            "betweenness": float(betweenness[node_id]),
+            "giant_before": original_giant_size,
+            "giant_after": giant_after,
+            "reduction": float(1 - giant_after / original_size),
+        })
+    betweenness_rank = {
+        row["id"]: index
+        for index, row in enumerate(
+            sorted(rows, key=lambda row: (-row["betweenness"], row["character"])),
+            start=1,
+        )
+    }
+    fragmentation_rank = {
+        row["id"]: index
+        for index, row in enumerate(
+            sorted(rows, key=lambda row: (-row["reduction"], row["character"])),
+            start=1,
+        )
+    }
+    for row in rows:
+        row["betweenness_rank"] = betweenness_rank[row["id"]]
+        row["fragmentation_rank"] = fragmentation_rank[row["id"]]
+    return rows, original_size, original_giant_size
+
+
+def direction_rows(graph, directed, info):
+    node_count = directed.number_of_nodes()
+    in_degree = dict(directed.in_degree())
+    out_degree = dict(directed.out_degree())
+
+    def rank_map(values):
+        ordered = sorted(values, key=lambda node: (-values[node], info[node]["name"]))
+        return {node: rank for rank, node in enumerate(ordered, start=1)}
+
+    in_rank = rank_map(in_degree)
+    out_rank = rank_map(out_degree)
+
+    def percentile(rank):
+        return 100.0 * (node_count - rank) / max(1, node_count - 1)
+
+    rows = []
+    for node_id in directed.nodes:
+        in_percentile = percentile(in_rank[node_id])
+        out_percentile = percentile(out_rank[node_id])
+        description = info[node_id]["description"]
+        tags = []
+        for label, words in {
+            "team/group": ("team", "group", "organization", "organisation"),
+            "location": ("location", "city", "country", "planet"),
+            "villain": ("villain", "supervillain", "enemy"),
+            "protagonist/hero": ("superhero", "hero", "protagonist"),
+            "supporting character": ("character", "fictional character"),
+        }.items():
+            if any(word in description.lower() for word in words):
+                tags.append(label)
+        rows.append({
+            "id": node_id,
+            "character": info[node_id]["name"],
+            "description": description,
+            "in_degree": int(in_degree[node_id]),
+            "out_degree": int(out_degree[node_id]),
+            "in_rank": in_rank[node_id],
+            "out_rank": out_rank[node_id],
+            "in_percentile": in_percentile,
+            "out_percentile": out_percentile,
+            "direction_difference": out_percentile - in_percentile,
+            "tags": tags,
+        })
+
+    outgoing = sorted(rows, key=lambda row: (-row["direction_difference"], row["character"]))[:5]
+    incoming = sorted(rows, key=lambda row: (row["direction_difference"], row["character"]))[:5]
+    top_tags = {}
+    for row in outgoing + incoming:
+        for tag in row["tags"]:
+            top_tags[tag] = top_tags.get(tag, 0) + 1
+    common_tag = max(top_tags.items(), key=lambda item: item[1]) if top_tags else None
+    return {
+        "rows": rows,
+        "links_out_more": outgoing,
+        "linked_to_more": incoming,
+        "common_tag": {"label": common_tag[0], "count": common_tag[1]} if common_tag else None,
+    }
+
+
 def main():
-    graph, names = load_graph()
+    graph, directed, info = load_graph()
+    names = {node_id: value["name"] for node_id, value in info.items()}
     real = centralities(graph)
     null_samples = {metric: [] for metric in real}
 
@@ -81,6 +180,23 @@ def main():
     ranked = [row for row in rows if row["z"] is not None]
     top = sorted(ranked, key=lambda row: (-row["z"], row["character"], row["centrality"]))[:3]
     lowest = sorted(ranked, key=lambda row: (row["z"], row["character"], row["centrality"]))[:3]
+    previous_top3_betweenness = sorted(
+        (row for row in ranked if row["centrality"] == "Betweenness"),
+        key=lambda row: (-row["z"], row["character"]),
+    )[:3]
+    betweenness = real["Betweenness"]
+    fragmentation, original_size, original_giant_size = fragmentation_rows(graph, names, betweenness)
+    direction = direction_rows(graph, directed, info)
+    top_betweenness_ids = {
+        row["id"] for row in previous_top3_betweenness
+    }
+    top_fragmentation = sorted(
+        fragmentation,
+        key=lambda row: (-row["reduction"], row["character"]),
+    )[:5]
+    x_values = np.array([row["betweenness"] for row in fragmentation])
+    y_values = np.array([row["reduction"] for row in fragmentation])
+    correlation = float(np.corrcoef(x_values, y_values)[0, 1])
     output = {
         "metadata": {
             "source": "02805 Week 1 shared Marvel Wikipedia network",
@@ -88,10 +204,19 @@ def main():
             "edges": graph.number_of_edges(),
             "null_model": "80 Erdős–Rényi graphs with the same node and edge counts",
             "null_runs": NULL_RUNS,
+            "original_network_size": original_size,
+            "original_giant_component_size": original_giant_size,
         },
         "rows": rows,
         "top": top,
         "lowest": lowest,
+        "fragmentation": {
+            "rows": fragmentation,
+            "top5": top_fragmentation,
+            "top3_betweenness_ids": sorted(top_betweenness_ids),
+            "correlation": correlation,
+        },
+        "direction": direction,
     }
     with OUTPUT_PATH.open("w", encoding="utf-8") as file:
         json.dump(output, file, ensure_ascii=False, separators=(",", ":"))

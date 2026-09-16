@@ -42,12 +42,60 @@
       .candidate-z { display: block; color: var(--lilac); margin-top: 4px; }
       .formula { border-left: 3px solid var(--magenta); padding: 4px 0 4px 20px; margin: 30px 0; color: var(--paper); font: 14px var(--mono); }
       .small-note { color: var(--muted); font: 10px/1.5 var(--mono); }
+      .fragmentation-widget { margin-top: 90px; }
+      .fragmentation-chart { width: 100%; height: 470px; display: block; background: #110d19; border: 1px solid rgba(189, 125, 255, .42); }
+      .fragmentation-axis path, .fragmentation-axis line { stroke: rgba(242, 234, 245, .28); }
+      .fragmentation-axis text, .fragmentation-label { fill: var(--paper); font: 10px var(--mono); }
+      .fragmentation-grid line { stroke: rgba(125, 46, 216, .28); }
+      .fragmentation-grid path { display: none; }
+      .fragmentation-point { cursor: pointer; }
+      .fragmentation-detail { margin-top: 18px; border-left: 3px solid var(--magenta); padding: 16px 20px; background: #110d19; }
+      .fragmentation-detail h3 { margin: 0 0 12px; color: var(--paper); font: 22px var(--display); }
+      .fragmentation-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 22px; margin: 0; }
+      .fragmentation-stats dt { color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+      .fragmentation-stats dd { margin: 4px 0 0; color: var(--lilac); font: 13px var(--mono); }
+      .fragmentation-table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+      .fragmentation-table th { color: var(--magenta); font: 10px var(--mono); letter-spacing: .08em; text-align: left; text-transform: uppercase; padding: 0 10px 12px 0; }
+      .fragmentation-table td { border-top: 1px solid var(--line); padding: 11px 10px 11px 0; color: #c9bdcc; font-size: 13px; }
+      .fragmentation-table td:not(:first-child) { color: var(--lilac); font: 12px var(--mono); }
+      .fragmentation-table button { border: 0; background: none; color: var(--paper); cursor: pointer; padding: 0; font: inherit; text-align: left; }
+      .fragmentation-table button:hover { color: var(--magenta); }
+      .fragmentation-summary { border-left: 3px solid var(--lilac); padding: 4px 0 4px 20px; margin-top: 28px; }
+      .direction-widget { margin-top: 90px; }
+      .direction-controls { display: flex; gap: 8px; justify-content: flex-end; margin: 28px 0 16px; }
+      .direction-button { border: 1px solid rgba(189, 125, 255, .6); background: transparent; color: var(--paper); cursor: pointer; font: 10px var(--mono); padding: 9px 11px; }
+      .direction-button.is-active, .direction-button:hover { background: var(--lilac); color: var(--ink); }
+      .direction-chart { width: 100%; height: 410px; display: block; border: 1px solid rgba(189, 125, 255, .42); background: #110d19; }
+      .direction-axis path, .direction-axis line { stroke: rgba(242, 234, 245, .28); }
+      .direction-axis text, .direction-label { fill: var(--paper); font: 10px var(--mono); }
+      .direction-grid line { stroke: rgba(125, 46, 216, .28); }
+      .direction-grid path { display: none; }
+      .direction-bar { cursor: pointer; fill: var(--magenta); }
+      .direction-bar:hover, .direction-bar.is-selected { fill: var(--lilac); }
+      .direction-detail { margin-top: 18px; border-left: 3px solid var(--magenta); padding: 18px 20px; background: #110d19; }
+      .direction-detail h3 { margin: 0 0 14px; color: var(--paper); font: 22px var(--display); }
+      .direction-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 24px; align-items: start; }
+      .direction-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; margin: 0; }
+      .direction-stats dt { color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+      .direction-stats dd { margin: 4px 0 0; color: var(--lilac); font: 13px var(--mono); }
+      .direction-flow { border: 1px solid var(--line); padding: 12px; }
+      .direction-flow-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; color: var(--paper); font: 11px var(--mono); }
+      .direction-flow-row span:first-child { width: 82px; }
+      .direction-flow-track { flex: 1; height: 8px; background: rgba(242, 234, 245, .12); }
+      .direction-flow-fill { height: 100%; background: var(--magenta); }
+      .direction-flow-row.outgoing .direction-flow-fill { background: var(--lilac); }
+      .direction-synthesis { border-left: 3px solid var(--lilac); padding: 4px 0 4px 20px; margin-top: 28px; }
       @media (max-width: 780px) {
         .post-page { padding: 60px 8vw 90px; }
         .surprise-grid { grid-template-columns: 1fr; }
         .surprise-controls { justify-content: flex-start; }
         .surprise-card { padding: 12px; margin-left: -4vw; margin-right: -4vw; overflow-x: auto; }
         .surprise-table { min-width: 650px; }
+        .fragmentation-chart { height: 390px; }
+        .fragmentation-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .fragmentation-table { min-width: 650px; }
+        .direction-layout { grid-template-columns: 1fr; }
+        .direction-controls { justify-content: flex-start; }
       }
     </style>
   </head>
@@ -96,9 +144,39 @@
             <p class="small-note">Ranked observations, not aggregate character scores.</p>
           </aside>
         </div>
+
+        <section class="fragmentation-widget" aria-labelledby="fragmentation-heading">
+          <h2 id="fragmentation-heading">When a node disappears<span>.</span></h2>
+          <p>Betweenness measures how often a character sits on shortest paths. Node removal asks a different question: does the network actually lose its largest connected backbone when that character disappears?</p>
+          <p class="small-note">Each point uses observed betweenness from the original Marvel network. The y-axis is the giant component reduction after removing one character: 1 − (giant component after removal / original network size).</p>
+          <svg id="fragmentation-chart" class="fragmentation-chart" role="img" aria-label="Scatter plot of betweenness and giant component reduction"></svg>
+          <div id="fragmentation-detail" class="fragmentation-detail" aria-live="polite"></div>
+          <h3 class="candidate-heading">TOP 5 MOST DISRUPTIVE CHARACTERS</h3>
+          <div class="scoreboard-wrap">
+            <table class="fragmentation-table">
+              <thead><tr><th>Rank</th><th>Character</th><th>Betweenness</th><th>Giant after removal</th><th>Reduction</th></tr></thead>
+              <tbody id="fragmentation-table-body"></tbody>
+            </table>
+          </div>
+          <div id="fragmentation-summary" class="fragmentation-summary"></div>
+        </section>
+
+        <section class="direction-widget" aria-labelledby="direction-heading">
+          <h2 id="direction-heading">Direction<span>.</span></h2>
+          <p>Some characters link outward to many others while receiving few links themselves. Others are frequently referenced but link outward relatively little. This section compares those two directional roles without replacing the actual link counts with percentiles.</p>
+          <p class="small-note">Direction difference = out-rank percentile − in-rank percentile. Positive values indicate an outgoing-over-incoming asymmetry; negative values indicate an incoming-over-outgoing asymmetry.</p>
+          <div class="direction-controls" id="direction-controls" aria-label="Direction ranking controls">
+            <button class="direction-button is-active" data-direction="links_out_more" type="button">LINKS OUT MORE</button>
+            <button class="direction-button" data-direction="linked_to_more" type="button">LINKED TO MORE</button>
+          </div>
+          <svg id="direction-chart" class="direction-chart" role="img" aria-label="Ranked horizontal bar chart of directional differences"></svg>
+          <div id="direction-detail" class="direction-detail" aria-live="polite"></div>
+          <div id="direction-synthesis" class="direction-synthesis"></div>
+        </section>
       </article>
     </main>
     <footer class="site-footer"><div class="footer-brand">N<span>/</span>A</div><p>Made with data, curiosity<br />and too many arrows.</p><div class="footer-meta">Social Graphs and Interactions · 2026—27<br /><a href="../index.html">BACK TO HOME ↑</a></div></footer>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script src="week3.js"></script>
   </body>
 </html>
