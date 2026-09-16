@@ -139,6 +139,32 @@ def direction_rows(graph, directed, info):
     }
 
 
+def path_network(graph, directed, info, real):
+    degree_rows = direction_rows(graph, directed, info)["rows"]
+    degree_by_id = {row["id"]: row for row in degree_rows}
+    centrality_by_id = {}
+    for metric, values in real.items():
+        for node_id, value in values.items():
+            centrality_by_id.setdefault(node_id, {})[metric] = float(value)
+    return {
+        "nodes": [
+            {
+                "id": node_id,
+                "character": info[node_id]["name"],
+                "description": info[node_id]["description"],
+                "in_degree": degree_by_id[node_id]["in_degree"],
+                "out_degree": degree_by_id[node_id]["out_degree"],
+                "centrality": centrality_by_id[node_id],
+            }
+            for node_id in graph.nodes
+        ],
+        "edges": [
+            {"source": source, "target": target}
+            for source, target in graph.edges
+        ],
+    }
+
+
 def main():
     graph, directed, info = load_graph()
     names = {node_id: value["name"] for node_id, value in info.items()}
@@ -187,6 +213,7 @@ def main():
     betweenness = real["Betweenness"]
     fragmentation, original_size, original_giant_size = fragmentation_rows(graph, names, betweenness)
     direction = direction_rows(graph, directed, info)
+    network_paths = path_network(graph, directed, info, real)
     top_betweenness_ids = {
         row["id"] for row in previous_top3_betweenness
     }
@@ -217,6 +244,7 @@ def main():
             "correlation": correlation,
         },
         "direction": direction,
+        "path_network": network_paths,
     }
     with OUTPUT_PATH.open("w", encoding="utf-8") as file:
         json.dump(output, file, ensure_ascii=False, separators=(",", ":"))

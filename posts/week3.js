@@ -20,6 +20,20 @@ const directionControls = document.querySelector("#direction-controls");
 const directionChart = d3.select("#direction-chart");
 const directionDetail = document.querySelector("#direction-detail");
 const directionSynthesis = document.querySelector("#direction-synthesis");
+const pathStart = document.querySelector("#path-start");
+const pathDestination = document.querySelector("#path-destination");
+const pathExplore = document.querySelector("#path-explore");
+const pathOptions = document.querySelector("#path-character-options");
+const pathMessage = document.querySelector("#path-message");
+const pathTreeControls = document.querySelector("#path-tree-controls");
+const pathResult = document.querySelector("#path-result");
+const pathSvg = d3.select("#path-svg");
+const pathPrevious = document.querySelector("#path-previous");
+const pathPlay = document.querySelector("#path-play");
+const pathNext = document.querySelector("#path-next");
+const pathStep = document.querySelector("#path-step");
+const pathDetail = document.querySelector("#path-detail");
+const pathInsight = document.querySelector("#path-insight");
 
 let data;
 let mode = "top";
@@ -27,6 +41,16 @@ let metric = "Degree";
 let selectedId;
 let directionMode = "links_out_more";
 let selectedDirectionId;
+let pathData;
+let pathAdjacency;
+let selectedPath = [];
+let pathStepIndex = 0;
+let pathTimer;
+let pathSearch;
+let pathStartId;
+let nearestPathIds = [];
+let furthestPathIds = [];
+let pathViewMode = "all";
 
 function getCandidates() {
   const filtered = data.rows.filter(row => row.centrality === metric && row.z !== null);
@@ -202,6 +226,345 @@ function updateFragmentationSelection(data) {
     .attr("stroke-width", item => item.id === row.id ? 3 : 1.2);
 }
 
+function pathLookup(value) {
+  const query = value.trim().toLowerCase();
+  if (!query) return null;
+  return pathData.nodes.find(node => node.character.toLowerCase() === query) ||
+    pathData.nodes.find(node => node.character.toLowerCase().includes(query));
+}
+
+function shortestPath(startId, endId) {
+  const queue = [startId];
+  const previous = new Map([[startId, null]]);
+  while (queue.length) {
+    const current = queue.shift();
+    if (current === endId) break;
+    (pathAdjacency.get(current) || []).forEach(next => {
+      if (!previous.has(next)) {
+        previous.set(next, current);
+        queue.push(next);
+      }
+    });
+  }
+  if (!previous.has(endId)) return null;
+  const path = [];
+  let current = endId;
+  while (current !== null) {
+    path.unshift(current);
+    current = previous.get(current);
+  }
+  return path;
+}
+
+function pathsFrom(startId) {
+  const distance = new Map([[startId, 0]]);
+  const previous = new Map([[startId, null]]);
+  const queue = [startId];
+  while (queue.length) {
+    const current = queue.shift();
+    (pathAdjacency.get(current) || []).forEach(next => {
+      if (!distance.has(next)) {
+        distance.set(next, distance.get(current) + 1);
+        previous.set(next, current);
+        queue.push(next);
+      }
+    });
+  }
+  return { distance, previous };
+}
+
+function reconstructPath(previous, endId) {
+  const path = [];
+  let current = endId;
+  while (current !== null && current !== undefined) {
+    path.unshift(current);
+    current = previous.get(current);
+  }
+  return path;
+}
+
+function nodeInfo(id) {
+  return pathData.nodes.find(node => node.id === id);
+}
+
+function pathNames(ids) {
+  return ids.map(id => nodeInfo(id).character);
+}
+
+function renderPathChain(ids) {
+  return pathNames(ids).map((name, index) => `<strong>${name}</strong>${index < ids.length - 1 ? " → " : ""}`).join("");
+}
+
+function renderPathSvg() {
+  const width = pathSvg.node().clientWidth || 820;
+  const height = 470;
+  const margin = { left: 50, right: 50 };
+  const stepWidth = selectedPath.length > 1 ? (width - margin.left - margin.right) / (selectedPath.length - 1) : 0;
+  pathSvg.attr("viewBox", `0 0 ${width} ${height}`).selectAll("*").remove();
+  if (!selectedPath.length) return;
+  const positions = selectedPath.map((id, index) => ({ id, x: selectedPath.length === 1 ? width / 2 : margin.left + index * stepWidth, y: height / 2 }));
+  const group = pathSvg.append("g");
+  group.selectAll("line").data(positions.slice(0, -1)).join("line")
+    .attr("class", (point, index) => `path-svg-line${index < pathStepIndex ? " lit" : ""}`)
+    .attr("x1", point => point.x).attr("y1", point => point.y)
+    .attr("x2", (point, index) => positions[index + 1].x).attr("y2", (point, index) => positions[index + 1].y);
+  const nodes = group.selectAll("g").data(positions).join("g")
+    .on("click", (event, point) => {
+      pathStepIndex = positions.findIndex(item => item.id === point.id);
+      renderPathSvg();
+      renderPathDetail();
+    });
+  nodes.append("circle")
+    .attr("class", (point, index) => `path-svg-node${index <= pathStepIndex ? " lit" : ""}${index === pathStepIndex ? " current" : ""}`)
+    .attr("cx", point => point.x).attr("cy", point => point.y).attr("r", 13);
+  nodes.append("text").attr("class", "path-svg-label")
+    .attr("x", point => point.x).attr("y", point => point.y - 24).attr("text-anchor", "middle")
+    .text(point => nodeInfo(point.id).character);
+}
+
+function pathEdgeKey(source, target) {
+  return `${source}::${target}`;
+}
+
+function pathBranchEdges(ids) {
+  const edges = new Set();
+  ids.forEach((id, index) => {
+    if (index > 0) edges.add(pathEdgeKey(ids[index - 1], id));
+  });
+  return edges;
+}
+
+function renderPathTree() {
+  if (pathTreeControls.hidden || !pathSearch || !pathStartId) return;
+  const entries = [...pathSearch.distance.entries()]
+    .map(([id, distance]) => ({ id, distance, parent: pathSearch.previous.get(id) }))
+    .sort((a, b) => a.distance - b.distance || nodeInfo(a.id).character.localeCompare(nodeInfo(b.id).character));
+  const levels = d3.group(entries, entry => entry.distance);
+  const maxDistance = d3.max(entries, entry => entry.distance) || 0;
+  const width = pathSvg.node().clientWidth || 820;
+  const height = 470;
+  const margin = { left: 52, right: 52, top: 26, bottom: 24 };
+  const levelWidth = maxDistance ? (width - margin.left - margin.right) / maxDistance : 0;
+  const positions = new Map();
+  levels.forEach((levelEntries, distance) => {
+    levelEntries.forEach((entry, index) => {
+      positions.set(entry.id, {
+        x: maxDistance ? margin.left + distance * levelWidth : width / 2,
+        y: margin.top + (index + 1) * (height - margin.top - margin.bottom) / (levelEntries.length + 1),
+      });
+    });
+  });
+  const nearestEdges = new Set(nearestPathIds.flatMap(pathBranchEdges));
+  const furthestEdges = new Set(furthestPathIds.flatMap(pathBranchEdges));
+  pathSvg.attr("viewBox", `0 0 ${width} ${height}`).selectAll("*").remove();
+  const chart = pathSvg.append("g");
+  chart.selectAll("line").data(entries.filter(entry => entry.parent !== null)).join("line")
+    .attr("class", entry => {
+      const key = pathEdgeKey(entry.parent, entry.id);
+      return `path-tree-link${nearestEdges.has(key) ? " nearest" : furthestEdges.has(key) ? " furthest" : ""}`;
+    })
+    .attr("x1", entry => positions.get(entry.parent).x).attr("y1", entry => positions.get(entry.parent).y)
+    .attr("x2", entry => positions.get(entry.id).x).attr("y2", entry => positions.get(entry.id).y);
+  const nodes = chart.selectAll("g").data(entries).join("g")
+    .on("click", (event, entry) => {
+      setSelectedPath(reconstructPath(pathSearch.previous, entry.id));
+    });
+  nodes.append("circle")
+    .attr("class", entry => {
+      const nearest = nearestPathIds.some(path => path.includes(entry.id));
+      const furthest = furthestPathIds.some(path => path.includes(entry.id));
+      return `path-tree-node${entry.id === pathStartId ? " root" : nearest ? " nearest" : furthest ? " furthest" : ""}`;
+    })
+    .attr("cx", entry => positions.get(entry.id).x).attr("cy", entry => positions.get(entry.id).y)
+    .attr("r", entry => {
+      const count = levels.get(entry.distance).length;
+      return Math.max(3, Math.min(7, 180 / Math.sqrt(count)));
+    });
+  nodes.append("title").text(entry => `${nodeInfo(entry.id).character} · ${entry.distance} link${entry.distance === 1 ? "" : "s"} from ${nodeInfo(pathStartId).character}`);
+  nodes.filter(entry => levels.get(entry.distance).length <= 20 || entry.id === pathStartId)
+    .append("text").attr("class", "path-tree-label")
+    .attr("x", entry => positions.get(entry.id).x + 9).attr("y", entry => positions.get(entry.id).y + 3)
+    .text(entry => nodeInfo(entry.id).character);
+}
+
+function setStartOnlyPath(mode) {
+  if (pathTreeControls.hidden || !pathSearch || !pathStartId) return;
+  pathViewMode = mode;
+  if (mode === "all") {
+    selectedPath = [];
+    pathStepIndex = 0;
+    pathDetail.hidden = true;
+    pathInsight.hidden = true;
+    pathStep.textContent = "Full shortest-path tree";
+    renderPathTree();
+  } else {
+  const paths = mode === "longest" ? furthestPathIds : nearestPathIds;
+    if (paths.length) setSelectedPath(paths[0]);
+  }
+  pathTreeControls.querySelectorAll("button").forEach(button => {
+    button.classList.toggle("is-active", button.dataset.treeMode === mode);
+  });
+}
+
+function renderPathDetail() {
+  if (!selectedPath.length) {
+    pathDetail.hidden = true;
+    pathStep.textContent = "No path selected";
+    return;
+  }
+  const current = nodeInfo(selectedPath[pathStepIndex]);
+  const next = pathStepIndex < selectedPath.length - 1 ? nodeInfo(selectedPath[pathStepIndex + 1]) : null;
+  pathDetail.hidden = false;
+  pathStep.textContent = `Step ${pathStepIndex + 1} of ${selectedPath.length}${next ? ` · Current: ${current.character} · Next: ${next.character}` : ` · Current: ${current.character}`}`;
+  pathDetail.innerHTML = `
+    <h3>${current.character}</h3>
+    <dl class="path-stats">
+      <div><dt>Step</dt><dd>${pathStepIndex + 1} of ${selectedPath.length}</dd></div>
+      <div><dt>In-degree</dt><dd>${current.in_degree}</dd></div>
+      <div><dt>Out-degree</dt><dd>${current.out_degree}</dd></div>
+      <div><dt>Closeness</dt><dd>${current.centrality.Closeness.toFixed(4)}</dd></div>
+      <div><dt>Betweenness</dt><dd>${current.centrality.Betweenness.toFixed(4)}</dd></div>
+      <div><dt>PageRank</dt><dd>${current.centrality.PageRank.toFixed(5)}</dd></div>
+    </dl>
+    <p class="small-note">${current.description}</p>`;
+}
+
+function setSelectedPath(ids) {
+  pathViewMode = "linear";
+  pathTreeControls.querySelectorAll("button").forEach(button => button.classList.remove("is-active"));
+  selectedPath = ids || [];
+  pathStepIndex = 0;
+  pathPlay.textContent = "PLAY PATH";
+  if (pathTimer) clearInterval(pathTimer);
+  renderPathSvg();
+  renderPathDetail();
+  if (selectedPath.length) {
+    pathInsight.hidden = false;
+    const intermediaries = Math.max(0, selectedPath.length - 2);
+    const maxBetweenness = Math.max(...selectedPath.map(id => nodeInfo(id).centrality.Betweenness));
+    const highest = nodeInfo(selectedPath.find(id => nodeInfo(id).centrality.Betweenness === maxBetweenness));
+    pathInsight.innerHTML = `<h3>What does the path tell us?</h3><p><strong>Network observation:</strong> this route contains ${selectedPath.length - 1} links and ${intermediaries} intermediary character${intermediaries === 1 ? "" : "s"}. Among the characters on the route, ${highest.character} has the highest betweenness (${highest.centrality.Betweenness.toFixed(4)}). <strong>Possible interpretation:</strong> the route shows a short connection in the undirected network; the available measures describe the characters on it, but do not by themselves establish why the editorial links exist.</p>`;
+  } else {
+    pathInsight.hidden = true;
+  }
+}
+
+function renderPathResult(html) {
+  pathResult.hidden = false;
+  pathResult.innerHTML = html;
+}
+
+function explorePath() {
+  const start = pathLookup(pathStart.value);
+  const destination = pathLookup(pathDestination.value);
+  if (!start) {
+    pathSearch = null;
+    pathStartId = null;
+    nearestPathIds = [];
+    furthestPathIds = [];
+    pathMessage.textContent = "Please select or type a valid starting character.";
+    pathResult.hidden = true;
+    pathTreeControls.hidden = true;
+    setSelectedPath([]);
+    return;
+  }
+  pathStart.value = start.character;
+  if (destination) pathDestination.value = destination.character;
+  if (pathDestination.value.trim() && !destination) {
+    pathSearch = null;
+    pathStartId = null;
+    nearestPathIds = [];
+    furthestPathIds = [];
+    pathTreeControls.hidden = true;
+    pathMessage.textContent = "Please select or type a valid destination character.";
+    return;
+  }
+  if (destination) {
+    pathSearch = null;
+    pathStartId = null;
+    nearestPathIds = [];
+    furthestPathIds = [];
+    pathViewMode = "linear";
+    pathTreeControls.hidden = true;
+    const ids = shortestPath(start.id, destination.id);
+    if (!ids) {
+      pathMessage.textContent = `${start.character} and ${destination.character} are not connected in the network.`;
+      pathResult.hidden = true;
+      setSelectedPath([]);
+      return;
+    }
+    pathMessage.textContent = "Shortest path found.";
+    renderPathResult(`<h3>Shortest path</h3><div class="path-chain">${renderPathChain(ids)}</div><p><strong>Distance:</strong> ${ids.length - 1} links</p><button class="path-button" id="path-load-result" type="button">EXPLORE THIS PATH</button>`);
+    document.querySelector("#path-load-result").addEventListener("click", () => setSelectedPath(ids));
+    return;
+  }
+  const search = pathsFrom(start.id);
+  pathStartId = start.id;
+  pathSearch = search;
+  pathTreeControls.hidden = false;
+  const reachable = [...search.distance.entries()].filter(([id]) => id !== start.id);
+  if (!reachable.length) {
+    pathMessage.textContent = `${start.character} has no other reachable characters.`;
+    pathResult.hidden = true;
+    pathTreeControls.hidden = true;
+    setSelectedPath([]);
+    return;
+  }
+  const nearestDistance = Math.min(...reachable.map(([, distance]) => distance));
+  const furthestDistance = Math.max(...reachable.map(([, distance]) => distance));
+  const nearest = reachable.filter(([, distance]) => distance === nearestDistance).map(([id]) => id);
+  const furthest = reachable.filter(([, distance]) => distance === furthestDistance).map(([id]) => id);
+  nearestPathIds = nearest.map(id => reconstructPath(search.previous, id));
+  furthestPathIds = furthest.map(id => reconstructPath(search.previous, id));
+  const furthestButtons = furthest.map(id => `<button class="path-option" data-furthest-id="${id}" type="button">${nodeInfo(id).character}</button>`).join("");
+  renderPathResult(`<h3>Reachability from ${start.character}</h3><p>${reachable.length} reachable characters; unreachable characters are excluded.</p><p><strong>Shortest reachable path:</strong> ${nearestDistance} link${nearestDistance === 1 ? "" : "s"} (${nearest.map(id => nodeInfo(id).character).join(", ")})</p><p><strong>Furthest reachable character${furthest.length > 1 ? "s" : ""}:</strong> ${furthest.map(id => nodeInfo(id).character).join(", ")} · <strong>Shortest-path distance:</strong> ${furthestDistance} links</p><table class="fragmentation-table"><thead><tr><th>Path</th><th>Distance</th></tr></thead><tbody><tr><td>Shortest reachable path</td><td>${nearestDistance} links</td></tr><tr><td>Longest shortest path</td><td>${furthestDistance} links</td></tr></tbody></table><div class="path-options">${furthestButtons}</div><p class="small-note">Average shortest-path distance across reachable characters: ${(d3.mean(reachable, ([, distance]) => distance)).toFixed(2)} links.</p>`);
+  document.querySelectorAll("[data-furthest-id]").forEach(button => button.addEventListener("click", () => {
+    const ids = reconstructPath(search.previous, button.dataset.furthestId);
+    setSelectedPath(ids);
+  }));
+  setStartOnlyPath("all");
+}
+
+pathExplore.addEventListener("click", explorePath);
+pathTreeControls.querySelectorAll("button").forEach(button => button.addEventListener("click", () => {
+  setStartOnlyPath(button.dataset.treeMode);
+}));
+pathPrevious.addEventListener("click", () => {
+  if (selectedPath.length) {
+    pathStepIndex = Math.max(0, pathStepIndex - 1);
+    renderPathSvg();
+    renderPathDetail();
+  }
+});
+pathNext.addEventListener("click", () => {
+  if (selectedPath.length) {
+    pathStepIndex = Math.min(selectedPath.length - 1, pathStepIndex + 1);
+    renderPathSvg();
+    renderPathDetail();
+  }
+});
+pathPlay.addEventListener("click", () => {
+  if (!selectedPath.length) return;
+  if (pathTimer) {
+    clearInterval(pathTimer);
+    pathTimer = null;
+    pathPlay.textContent = "PLAY PATH";
+    return;
+  }
+  pathPlay.textContent = "PAUSE";
+  pathTimer = setInterval(() => {
+    if (pathStepIndex >= selectedPath.length - 1) {
+      clearInterval(pathTimer);
+      pathTimer = null;
+      pathPlay.textContent = "PLAY PATH";
+      return;
+    }
+    pathStepIndex += 1;
+    renderPathSvg();
+    renderPathDetail();
+  }, 800);
+});
+
 function formatDirectionPercent(value) {
   return `${value.toFixed(1)}%`;
 }
@@ -320,6 +683,17 @@ fetch("../data/week3_centrality.json")
   })
   .then(loaded => {
     data = loaded;
+    pathData = data.path_network;
+    pathAdjacency = new Map(pathData.nodes.map(node => [node.id, []]));
+    pathData.edges.forEach(edge => {
+      pathAdjacency.get(edge.source).push(edge.target);
+      pathAdjacency.get(edge.target).push(edge.source);
+    });
+    pathData.nodes.sort((a, b) => a.character.localeCompare(b.character)).forEach(node => {
+      const option = document.createElement("option");
+      option.value = node.character;
+      pathOptions.appendChild(option);
+    });
     updateSelectionAfterChange();
     renderFragmentation(data);
     selectedDirectionId = data.direction.links_out_more[0].id;

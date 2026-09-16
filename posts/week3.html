@@ -85,6 +85,47 @@
       .direction-flow-fill { height: 100%; background: var(--magenta); }
       .direction-flow-row.outgoing .direction-flow-fill { background: var(--lilac); }
       .direction-synthesis { border-left: 3px solid var(--lilac); padding: 4px 0 4px 20px; margin-top: 28px; }
+      .path-widget { margin-top: 90px; }
+      .path-controls { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; margin: 28px 0 18px; }
+      .path-field label { display: block; color: var(--magenta); font: 10px var(--mono); margin-bottom: 7px; text-transform: uppercase; }
+      .path-field input { width: 100%; border: 1px solid rgba(189, 125, 255, .5); background: #110d19; color: var(--paper); font: 12px var(--mono); padding: 11px; outline: none; }
+      .path-field input:focus { border-color: var(--magenta); }
+      .path-button { border: 1px solid rgba(189, 125, 255, .6); background: var(--lilac); color: var(--ink); cursor: pointer; font: 10px var(--mono); padding: 11px 14px; }
+      .path-button:hover { background: var(--magenta); }
+      .path-message, .path-result, .path-detail, .path-insight { border-left: 3px solid var(--lilac); background: #110d19; padding: 16px 20px; margin-top: 14px; }
+      .path-result h3, .path-detail h3, .path-insight h3 { color: var(--paper); font: 22px var(--display); margin: 0 0 12px; }
+      .path-chain { color: var(--paper); font: 14px/1.7 var(--mono); overflow-wrap: anywhere; }
+      .path-chain strong { color: var(--magenta); }
+      .path-svg { display: block; width: 100%; height: 470px; border: 1px solid rgba(189, 125, 255, .42); background: #110d19; margin-top: 16px; }
+      .path-tree { display: block; width: 100%; height: 470px; border: 1px solid rgba(189, 125, 255, .42); background: #110d19; margin-top: 16px; }
+      .path-tree-link { stroke: rgba(242, 234, 245, .14); stroke-width: 1.2; }
+      .path-tree-link.nearest { stroke: var(--magenta); stroke-width: 2.4; }
+      .path-tree-link.furthest { stroke: var(--lilac); stroke-width: 2.4; }
+      .path-tree-node { fill: #110d19; stroke: rgba(242, 234, 245, .42); stroke-width: 1.2; cursor: pointer; }
+      .path-tree-node.nearest { fill: var(--magenta); stroke: var(--paper); }
+      .path-tree-node.furthest { fill: var(--lilac); stroke: var(--paper); }
+      .path-tree-node.root { fill: var(--cyan); stroke: var(--paper); }
+      .path-tree-label { fill: var(--paper); font: 9px var(--mono); pointer-events: none; }
+      .path-tree-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+      .path-tree-controls[hidden] { display: none; }
+      .path-tree-button { border: 1px solid rgba(189, 125, 255, .6); background: transparent; color: var(--paper); cursor: pointer; font: 10px var(--mono); padding: 9px 11px; }
+      .path-tree-button.is-active, .path-tree-button:hover { background: var(--lilac); color: var(--ink); }
+      .path-svg-line { stroke: rgba(242, 234, 245, .18); stroke-width: 3; }
+      .path-svg-line.lit { stroke: var(--magenta); stroke-width: 5; }
+      .path-svg-node { fill: #110d19; stroke: var(--lilac); stroke-width: 2; cursor: pointer; }
+      .path-svg-node.lit { fill: var(--magenta); stroke: var(--paper); }
+      .path-svg-node.current { fill: var(--cyan); stroke: var(--paper); }
+      .path-svg-label { fill: var(--paper); font: 10px var(--mono); pointer-events: none; }
+      .path-navigation { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+      .path-navigation .path-button { background: transparent; color: var(--paper); padding: 8px 11px; }
+      .path-navigation .path-button:hover { background: var(--lilac); color: var(--ink); }
+      .path-step { color: var(--lilac); font: 11px var(--mono); margin-left: 8px; }
+      .path-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 20px; margin: 0; }
+      .path-stats dt { color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+      .path-stats dd { margin: 4px 0 0; color: var(--lilac); font: 13px var(--mono); }
+      .path-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+      .path-option { border: 1px solid rgba(189, 125, 255, .5); background: transparent; color: var(--paper); cursor: pointer; font: 10px var(--mono); padding: 9px 11px; }
+      .path-option:hover { background: var(--lilac); color: var(--ink); }
       @media (max-width: 780px) {
         .post-page { padding: 60px 8vw 90px; }
         .surprise-grid { grid-template-columns: 1fr; }
@@ -96,6 +137,8 @@
         .fragmentation-table { min-width: 650px; }
         .direction-layout { grid-template-columns: 1fr; }
         .direction-controls { justify-content: flex-start; }
+        .path-controls { grid-template-columns: 1fr; }
+        .path-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
     </style>
   </head>
@@ -172,6 +215,33 @@
           <svg id="direction-chart" class="direction-chart" role="img" aria-label="Ranked horizontal bar chart of directional differences"></svg>
           <div id="direction-detail" class="direction-detail" aria-live="polite"></div>
           <div id="direction-synthesis" class="direction-synthesis"></div>
+        </section>
+
+        <section class="path-widget" aria-labelledby="path-heading">
+          <h2 id="path-heading">Explore paths<span>.</span></h2>
+          <p>Choose a starting character and, optionally, a destination. With both selected, the tool shows their shortest path. With only a starting character, it finds the nearest and furthest reachable characters using shortest-path distance. Unreachable characters are excluded.</p>
+          <div class="path-controls">
+            <div class="path-field"><label for="path-start">Starting character</label><input id="path-start" list="path-character-options" placeholder="Select or type a character" /></div>
+            <div class="path-field"><label for="path-destination">Destination character (optional)</label><input id="path-destination" list="path-character-options" placeholder="Select or type a character" /></div>
+            <button class="path-button" id="path-explore" type="button">EXPLORE PATH</button>
+          </div>
+          <datalist id="path-character-options"></datalist>
+          <div id="path-message" class="path-message">Select a starting character to begin.</div>
+          <div class="path-tree-controls" id="path-tree-controls" hidden>
+            <button class="path-tree-button is-active" data-tree-mode="all" type="button">SHOW ALL PATHS</button>
+            <button class="path-tree-button" data-tree-mode="shortest" type="button">SHORTEST</button>
+            <button class="path-tree-button" data-tree-mode="longest" type="button">LONGEST</button>
+          </div>
+          <div id="path-result" class="path-result" hidden></div>
+          <svg id="path-svg" class="path-svg" role="img" aria-label="Interactive path tree or selected path"></svg>
+          <div class="path-navigation">
+            <button class="path-button" id="path-previous" type="button">PREVIOUS</button>
+            <button class="path-button" id="path-play" type="button">PLAY PATH</button>
+            <button class="path-button" id="path-next" type="button">NEXT</button>
+            <span class="path-step" id="path-step">No path selected</span>
+          </div>
+          <div id="path-detail" class="path-detail" hidden></div>
+          <div id="path-insight" class="path-insight" hidden></div>
         </section>
       </article>
     </main>
