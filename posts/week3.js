@@ -745,7 +745,7 @@ function renderCliqueTable() {
   cliqueTable.replaceChildren();
   cliqueData.cliques.cliques.forEach(clique => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td><button type="button">${String(clique.rank).padStart(2, "0")}</button></td><td>${clique.size}</td><td>${clique.internal_edges} / ${clique.possible_edges}</td><td>${clique.team ? `${clique.team.label} · ${clique.team.count}/${clique.size}` : "—"}</td><td>${clique.decade ? `${clique.decade.label} · ${clique.decade.count}/${clique.size}` : "—"}</td>`;
+    tr.innerHTML = `<td><button type="button">${String(clique.rank).padStart(2, "0")}</button></td><td>${clique.size}</td><td>${clique.team ? `${clique.team.label} · ${clique.team.count}/${clique.size}` : "—"}</td><td>${clique.decade ? `${clique.decade.label} · ${clique.decade.count}/${clique.size}` : "—"}</td>`;
     tr.querySelector("button").addEventListener("click", () => selectClique(clique.id));
     cliqueTable.appendChild(tr);
   });
