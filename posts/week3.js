@@ -714,14 +714,238 @@ const homophilySummary = document.querySelector("#homophily-summary");
 const homophilyChart = d3.select("#homophily-chart");
 let cliqueData;
 let selectedCliqueId;
+let overlapHoveredCliqueId;
 let selectedAttribute = "team";
 
 const cliqueCategory = (value, known, label) => value
   ? `${label}: ${value.label} · ${value.count}/${value.of}${value.distinct > 1 ? ` · ${value.distinct} labels` : ""}`
   : `${label}: — (${known} known)`;
 
+function cliqueOverlaps() {
+  const cliques = cliqueData.cliques.cliques;
+  return d3.cross(cliques, cliques)
+    .filter(([left, right]) => left.rank < right.rank)
+    .map(([left, right]) => ({
+      source: left.id, target: right.id, left, right,
+      count: left.members.filter(member => right.members.some(other => other.id === member.id)).length,
+    }))
+    .filter(link => link.count > 0);
+}
+
+function formatCliqueName(clique) {
+  return `Clique ${String(clique.rank).padStart(2, "0")}`;
+}
+
+function getCliqueOverlapData() {
+  const cliques = cliqueData.cliques.cliques;
+  return d3.cross(cliques, cliques)
+    .filter(([left, right]) => left.rank < right.rank)
+    .map(([left, right]) => ({
+      source: left.id,
+      target: right.id,
+      left,
+      right,
+      count: left.members.filter(member => right.members.some(other => other.id === member.id)).length,
+    }))
+    .filter(link => link.count > 0)
+    .sort((a, b) => b.count - a.count || a.left.rank - b.left.rank || a.right.rank - b.right.rank);
+}
+
+function getClosestOverlapDetails(clique) {
+  const overlaps = cliqueData.cliques.cliques
+    .filter(other => other.id !== clique.id)
+    .map(other => ({
+      clique: other,
+      count: other.members.filter(member => clique.members.some(candidate => candidate.id === member.id)).length,
+    }))
+    .filter(item => item.count > 0)
+    .sort((a, b) => b.count - a.count || a.clique.rank - b.clique.rank);
+
+  if (!overlaps.length) return "";
+  const maxCount = overlaps[0].count;
+  const closest = overlaps.filter(item => item.count === maxCount);
+  const labels = closest.map(item => `${formatCliqueName(item.clique)} · ${item.count} shared characters`);
+  return labels.join("; ");
+}
+
+function renderAllCliques() {
+  const width = Math.max(320, cliqueChart.node().clientWidth || 700);
+  const height = window.innerWidth < 700 ? 360 : 420;
+  const cliques = cliqueData.cliques.cliques.map(clique => ({ ...clique }));
+  const links = getCliqueOverlapData();
+  const maximumOverlap = d3.max(links, link => link.count) || 1;
+  const totalPairs = cliques.length * (cliques.length - 1) / 2;
+  const strongest = links[0];
+  const edgeWidth = d3.scaleLinear().domain([1, maximumOverlap]).range([1.5, 8.5]);
+  const edgeOpacity = d3.scaleLinear().domain([1, maximumOverlap]).range([.2, .9]);
+
+  const simulationNodes = cliques.map(clique => ({ ...clique, vx: 0, vy: 0 }));
+  const simulationNodeById = new Map(simulationNodes.map(node => [node.id, node]));
+  const simulationLinks = links.map(link => ({
+    source: simulationNodeById.get(link.source),
+    target: simulationNodeById.get(link.target),
+    count: link.count,
+  }));
+
+  const simulation = d3.forceSimulation(simulationNodes)
+    .force("link", d3.forceLink(simulationLinks)
+      .id(node => node.id)
+      .distance(link => 180 - (link.count - 1) * 18)
+      .strength(link => 0.18 + (link.count / maximumOverlap) * 0.7))
+    .force("charge", d3.forceManyBody().strength(-420))
+    .force("collide", d3.forceCollide().radius(node => 28))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("x", d3.forceX(width / 2).strength(0.08))
+    .force("y", d3.forceY(height / 2).strength(0.08))
+    .stop();
+
+  for (let tick = 0; tick < 240; tick += 1) {
+    simulation.tick();
+  }
+
+  simulationNodes.forEach(node => {
+    const clique = cliques.find(item => item.id === node.id);
+    if (clique) {
+      clique.x = node.x;
+      clique.y = node.y;
+    }
+  });
+
+  const byId = new Map(cliques.map(clique => [clique.id, clique]));
+  cliqueChart.attr("viewBox", `0 0 ${width} ${height}`).attr("aria-label", "Overlap network of all displayed cliques").selectAll("*").remove();
+  cliqueChart.append("text").attr("class", "clique-overlap-legend").attr("x", 18).attr("y", 25)
+    .text("ALL CLIQUES · EDGE THICKNESS = SHARED CHARACTERS · THICKER = GREATER OVERLAP");
+
+  const graph = cliqueChart.append("g");
+  const linksSelection = graph.selectAll("line.clique-overlap-link").data(links).join("line")
+    .attr("class", "clique-overlap-link")
+    .attr("x1", link => byId.get(link.source).x)
+    .attr("y1", link => byId.get(link.source).y)
+    .attr("x2", link => byId.get(link.target).x)
+    .attr("y2", link => byId.get(link.target).y)
+    .attr("stroke-width", link => edgeWidth(link.count))
+    .attr("stroke-opacity", link => edgeOpacity(link.count));
+
+  linksSelection.append("title").text(link => `${formatCliqueName(link.left)} ↔ ${formatCliqueName(link.right)}\n${link.count} shared character${link.count === 1 ? "" : "s"}`);
+
+  const nodes = graph.selectAll("g.clique-overlap-node").data(cliques).join("g")
+    .attr("class", "clique-overlap-node")
+    .attr("transform", clique => `translate(${clique.x},${clique.y})`)
+    .attr("role", "button")
+    .attr("tabindex", 0)
+    .attr("aria-label", clique => `Open ${formatCliqueName(clique)}, ${clique.size} characters`)
+    .on("mouseenter", function (_, clique) {
+      overlapHoveredCliqueId = clique.id;
+      syncCliqueOverlapState();
+      if (selectedCliqueId === "all-cliques") {
+        renderAllCliquesSummary(clique);
+      }
+    })
+    .on("mouseleave", function () {
+      overlapHoveredCliqueId = null;
+      syncCliqueOverlapState();
+      if (selectedCliqueId === "all-cliques") {
+        renderAllCliquesSummary();
+      }
+    })
+    .on("click", (_, clique) => selectClique(clique.id))
+    .on("keydown", (event, clique) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectClique(clique.id);
+      }
+    });
+
+  nodes.append("title").text(clique => `${formatCliqueName(clique)} · ${clique.size} characters. Activate to inspect.`);
+  const circles = nodes.append("circle").attr("r", 18);
+  circles.filter(clique => clique.id === selectedCliqueId).classed("is-selected", true);
+  nodes.append("text").attr("class", "clique-overlap-label").attr("text-anchor", "middle").attr("y", 4).text(clique => String(clique.rank).padStart(2, "0"));
+  nodes.append("text").attr("class", "clique-overlap-size").attr("text-anchor", "middle").attr("y", 34).text(clique => `${clique.size} CHAR.`);
+
+  const strongestPairs = [...links].slice(0, 3);
+  // const strongestText = strongestPairs.map(link => `${formatCliqueName(link.left)} ↔ ${formatCliqueName(link.right)}`).join("; ");
+  // const strongestCount = strongestPairs[0]?.count || 0;
+  const averageOverlap = links.length ? (links.reduce((sum, link) => sum + link.count, 0) / links.length).toFixed(1) : "0.0";
+
+  const strongestText = strongest ? `${formatCliqueName(strongest.left)} ↔ ${formatCliqueName(strongest.right)}` : "No overlaps";
+  cliqueSummary.innerHTML = `
+    <h3>ALL CLIQUES</h3>
+    <dl class="clique-stats">
+      <div><dt>displayed cliques</dt><dd>${cliques.length} CLIQUES</dd></div>
+      <div><dt>Overlapping pairs</dt><dd>${links.length} OF ${totalPairs}</dd></div>
+      <div><dt>Strongest overlap</dt><dd>${strongestText} · ${strongest ? strongest.count : 0} SHARED CHARACTERS</dd></div>
+      <div><dt>Average overlap</dt><dd>${averageOverlap} SHARED CHARACTERS</dd></div>
+    </dl>
+    <p>Each node is one clique. An edge means the two cliques share at least one character. Thicker edges mean more shared characters.</p>
+    <p>${strongest ? `Several cliques share most of their members, indicating that the detected circles are closely related variations of a common core rather than twelve completely separate groups.` : "No clique pairs currently overlap."}</p>
+  `;
+
+  syncCliqueOverlapState();
+}
+
+function renderAllCliquesSummary(hoveredClique = null) {
+  const cliques = cliqueData.cliques.cliques;
+  const links = getCliqueOverlapData();
+  const totalPairs = cliques.length * (cliques.length - 1) / 2;
+  const strongest = links[0];
+  const averageOverlap = links.length ? (links.reduce((sum, link) => sum + link.count, 0) / links.length).toFixed(1) : "0.0";
+
+  if (hoveredClique) {
+    const localLinks = links.filter(link => link.left.id === hoveredClique.id || link.right.id === hoveredClique.id);
+    const strongestLocal = localLinks[0];
+    const strongestLocalText = strongestLocal ? `${formatCliqueName(strongestLocal.left)} ↔ ${formatCliqueName(strongestLocal.right)} · ${strongestLocal.count} shared characters` : "No shared characters";
+    cliqueSummary.innerHTML = `
+      <h3>${formatCliqueName(hoveredClique)}</h3>
+      <dl class="clique-stats">
+        <div><dt>Members</dt><dd>${hoveredClique.size} CHARACTERS</dd></div>
+        <div><dt>Closest overlap</dt><dd>${strongestLocalText}</dd></div>
+        <div><dt>Overlap pairs</dt><dd>${localLinks.length} OF ${totalPairs} CLIQUE PAIRS</dd></div>
+      </dl>
+      <p>Hovering highlights this clique and its direct overlap partners; unrelated cliques are dimmed to keep the local structure legible.</p>
+    `;
+    return;
+  }
+
+  const strongestText = strongest ? `${formatCliqueName(strongest.left)} ↔ ${formatCliqueName(strongest.right)}` : "No overlaps";
+  cliqueSummary.innerHTML = `
+    <h3>ALL CLIQUES</h3>
+    <dl class="clique-stats">
+      <div><dt>displayed cliques</dt><dd>${cliques.length} CLIQUES</dd></div>
+      <div><dt>Overlapping pairs</dt><dd>${links.length} OF ${totalPairs}</dd></div>
+      <div><dt>Strongest overlap</dt><dd>${strongestText} · ${strongest ? strongest.count : 0} SHARED CHARACTERS</dd></div>
+      <div><dt>Average overlap</dt><dd>${averageOverlap} SHARED CHARACTERS</dd></div>
+    </dl>
+    <p>Each node is one clique. An edge means the two cliques share at least one character. Thicker edges mean more shared characters.</p>
+    <p>${strongest ? `Several cliques share most of their members, indicating that the detected circles are closely related variations of a common core rather than twelve completely separate groups.` : "No clique pairs currently overlap."}</p>
+  `;
+}
+
+function syncCliqueOverlapState() {
+  const activeId = overlapHoveredCliqueId || (selectedCliqueId && selectedCliqueId !== "all-cliques" ? selectedCliqueId : null);
+  const links = getCliqueOverlapData();
+  const activeNeighbourIds = new Set();
+
+  if (activeId) {
+    links.forEach(link => {
+      if (link.left.id === activeId || link.right.id === activeId) {
+        activeNeighbourIds.add(link.left.id);
+        activeNeighbourIds.add(link.right.id);
+      }
+    });
+  }
+
+  d3.selectAll(".clique-overlap-link")
+    .classed("is-highlighted", link => activeId && (link.left.id === activeId || link.right.id === activeId))
+    .classed("is-muted", link => Boolean(activeId) && !(link.left.id === activeId || link.right.id === activeId));
+
+  d3.selectAll(".clique-overlap-node")
+    .classed("is-selected", clique => clique.id === selectedCliqueId)
+    .classed("is-neighbour", clique => activeId && activeNeighbourIds.has(clique.id) && clique.id !== activeId)
+    .classed("is-muted", clique => Boolean(activeId) && !activeNeighbourIds.has(clique.id) && clique.id !== activeId);
+}
+
 function renderClique(clique) {
-  const width = cliqueChart.node().clientWidth || 700;
+  const width = Math.max(320, cliqueChart.node().clientWidth || 700);
   const height = 420;
   const center = { x: width / 2, y: height / 2 };
   const radius = Math.min(width, height) * .31;
@@ -733,12 +957,19 @@ function renderClique(clique) {
   svg.selectAll("line").data(d3.cross(members, members).filter(([a, b]) => a.id < b.id)).join("line")
     .attr("class", "clique-link").attr("x1", d => point(d[0]).x).attr("y1", d => point(d[0]).y).attr("x2", d => point(d[1]).x).attr("y2", d => point(d[1]).y);
   const nodes = svg.selectAll("g.member").data(members).join("g").attr("transform", d => `translate(${point(d).x},${point(d).y})`);
-  nodes.append("circle").attr("class", "clique-node").attr("r", 8);
+  nodes.append("circle").attr("class", "clique-node").attr("r", window.innerWidth < 700 ? 7.5 : 8);
   nodes.append("text").attr("class", "clique-label").attr("x", d => Math.cos(d.angle) < -.15 ? -12 : 12).attr("y", 4)
-    .attr("text-anchor", d => Math.cos(d.angle) < -.15 ? "end" : "start").text(d => d.name);
+    .attr("text-anchor", d => Math.cos(d.angle) < -.15 ? "end" : "start")
+    .style("paint-order", "stroke")
+    .style("stroke", "rgba(17,13,25,.85)")
+    .style("stroke-width", "2px")
+    .text(d => d.name);
   const teamText = clique.team ? `${clique.team.label} appears for ${clique.team.count}/${clique.size} members${clique.team.distinct > 1 ? `; this clique mixes ${clique.team.distinct} listed teams.` : "."}` : "No reliable team affiliation was extracted for this clique.";
-  const overlap = clique.overlap ? ` Its closest displayed neighbour is Clique ${String(clique.overlap.rank).padStart(2, "0")} (${clique.overlap.count}/${clique.size} shared characters).` : "";
-  cliqueSummary.innerHTML = `<h3>CLIQUE ${String(clique.rank).padStart(2, "0")}</h3><dl class="clique-stats"><div><dt>Circle</dt><dd>${clique.size} CHARACTERS · ${clique.internal_edges} / ${clique.possible_edges} CONNECTIONS</dd></div><div><dt>Team</dt><dd>${cliqueCategory(clique.team, clique.team_known_members, "TEAM")}</dd></div><div><dt>Decade</dt><dd>${cliqueCategory(clique.decade, clique.decade_known_members, "DECADE")}</dd></div></dl><p>${teamText}${overlap}</p>`;
+  const connectionCount = clique.size * (clique.size - 1) / 2;
+  const closestOverlapText = getClosestOverlapDetails(clique)
+    ? ` Closest displayed neighbour: ${getClosestOverlapDetails(clique)}.`
+    : "";
+  cliqueSummary.innerHTML = `<h3>CLIQUE ${String(clique.rank).padStart(2, "0")}</h3><dl class="clique-stats"><div><dt>Circle</dt><dd>${clique.size} CHARACTERS · ${connectionCount} CONNECTIONS</dd></div><div><dt>Team</dt><dd>${cliqueCategory(clique.team, clique.team_known_members, "TEAM")}</dd></div><div><dt>Decade</dt><dd>${cliqueCategory(clique.decade, clique.decade_known_members, "DECADE")}</dd></div></dl><p>${teamText}${closestOverlapText}</p>`;
 }
 
 function renderCliqueTable() {
@@ -755,6 +986,12 @@ function selectClique(id) {
   selectedCliqueId = id;
   cliqueControls.querySelectorAll("button").forEach(button => button.classList.toggle("is-active", button.dataset.id === id));
   renderClique(cliqueData.cliques.cliques.find(clique => clique.id === id));
+}
+
+function selectAllCliques() {
+  selectedCliqueId = "all-cliques";
+  cliqueControls.querySelectorAll("button").forEach(button => button.classList.toggle("is-active", button.dataset.id === selectedCliqueId));
+  renderAllCliques();
 }
 
 function renderHomophily() {
@@ -781,6 +1018,9 @@ fetch("../data/week3_cliques_homophily.json")
       const button = document.createElement("button"); button.type = "button"; button.className = "clique-button"; button.dataset.id = clique.id; button.textContent = `CLIQUE ${String(clique.rank).padStart(2, "0")}`;
       button.addEventListener("click", () => selectClique(clique.id)); cliqueControls.appendChild(button);
     });
+    const allCliquesButton = document.createElement("button");
+    allCliquesButton.type = "button"; allCliquesButton.className = "clique-button"; allCliquesButton.dataset.id = "all-cliques"; allCliquesButton.textContent = "ALL CLIQUES";
+    allCliquesButton.addEventListener("click", selectAllCliques); cliqueControls.appendChild(allCliquesButton);
     Object.entries(loaded.homophily).forEach(([key, value]) => {
       const button = document.createElement("button"); button.type = "button"; button.className = "homophily-button"; button.dataset.attribute = key; button.textContent = value.label.toUpperCase();
       button.addEventListener("click", () => { selectedAttribute = key; homophilyControls.querySelectorAll("button").forEach(item => item.classList.toggle("is-active", item === button)); renderHomophily(); }); homophilyControls.appendChild(button);

@@ -133,14 +133,28 @@
       .clique-button, .homophily-button { border: 1px solid rgba(189, 125, 255, .55); background: transparent; color: var(--paper); cursor: pointer; font: 10px var(--mono); padding: 9px 11px; }
       .clique-button.is-active, .clique-button:hover { background: var(--lilac); color: var(--ink); }
       .homophily-button.is-active, .homophily-button:hover { background: var(--magenta); color: var(--ink); }
-      .clique-layout { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 24px; align-items: stretch; }
+      .clique-layout { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 24px; align-items: start; }
       .clique-chart, .homophily-chart { width: 100%; display: block; border: 1px solid rgba(189, 125, 255, .42); background: #110d19; }
-      .clique-chart { min-height: 420px; }
+      .clique-chart { height: 420px; min-height: 0; box-sizing: border-box; }
       .clique-link { stroke: rgba(189, 125, 255, .32); stroke-width: 1; }
       .clique-node { fill: var(--magenta); stroke: #110d19; stroke-width: 3; }
       .clique-label { fill: var(--paper); font: 10px var(--mono); }
+      .clique-overlap-legend { fill: var(--muted); font: 10px var(--mono); }
+      .clique-overlap-link { stroke: rgba(189, 125, 255, .8); stroke-linecap: round; transition: stroke-opacity .2s ease, stroke-width .2s ease, opacity .2s ease; }
+      .clique-overlap-link.is-highlighted { stroke: var(--cyan); stroke-opacity: 1; filter: drop-shadow(0 0 6px rgba(99, 214, 255, .45)); }
+      .clique-overlap-link.is-muted { stroke-opacity: .15; }
+      .clique-overlap-node { cursor: pointer; transition: transform .2s ease; }
+      .clique-overlap-node circle { fill: var(--magenta); stroke: #110d19; stroke-width: 3; transition: fill .2s ease, stroke .2s ease, opacity .2s ease, transform .2s ease; }
+      .clique-overlap-node:hover circle, .clique-overlap-node:focus circle, .clique-overlap-node.is-selected circle, .clique-overlap-node.is-neighbour circle { fill: var(--lilac); stroke: var(--paper); }
+      .clique-overlap-node.is-muted circle { fill: rgba(140, 121, 166, .65); stroke: rgba(17, 13, 25, .8); }
+      .clique-overlap-node:focus { outline: none; }
+      .clique-overlap-node text { fill: var(--paper); font: 11px var(--mono); font-weight: 700; pointer-events: none; }
+      .clique-overlap-node .clique-overlap-label { fill: var(--paper); }
+      .clique-overlap-size { fill: var(--paper); font: 9px var(--mono); pointer-events: none; }
+      .clique-overlap-node.is-muted text, .clique-overlap-node.is-muted .clique-overlap-size { fill: rgba(242, 234, 245, .7); }
       .clique-summary, .homophily-summary { border-left: 3px solid var(--magenta); padding: 18px 20px; background: #110d19; }
       .clique-summary h3, .homophily-summary h3 { margin: 0 0 14px; font: 22px var(--display); }
+      .clique-summary { height: 420px; box-sizing: border-box; overflow-y: auto; }
       .clique-stats { display: grid; gap: 14px; margin: 0; }
       .clique-stats dt { color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
       .clique-stats dd { margin: 4px 0 0; color: var(--lilac); font: 13px var(--mono); }
@@ -176,6 +190,7 @@
         .clique-layout { grid-template-columns: 1fr; }
         .clique-chart { min-height: 360px; }
         .clique-table { min-width: 650px; }
+        .clique-summary { height: auto; max-height: none; overflow: visible; }
         .homophily-bar-row { grid-template-columns: 125px minmax(0, 1fr) 55px; }
       }
     </style>
