@@ -862,11 +862,7 @@ function renderAllCliques() {
   nodes.append("text").attr("class", "clique-overlap-label").attr("text-anchor", "middle").attr("y", 4).text(clique => String(clique.rank).padStart(2, "0"));
   nodes.append("text").attr("class", "clique-overlap-size").attr("text-anchor", "middle").attr("y", 34).text(clique => `${clique.size} CHAR.`);
 
-  const strongestPairs = [...links].slice(0, 3);
-  // const strongestText = strongestPairs.map(link => `${formatCliqueName(link.left)} ↔ ${formatCliqueName(link.right)}`).join("; ");
-  // const strongestCount = strongestPairs[0]?.count || 0;
   const averageOverlap = links.length ? (links.reduce((sum, link) => sum + link.count, 0) / links.length).toFixed(1) : "0.0";
-
   const strongestText = strongest ? `${formatCliqueName(strongest.left)} ↔ ${formatCliqueName(strongest.right)}` : "No overlaps";
   cliqueSummary.innerHTML = `
     <h3>ALL CLIQUES</h3>

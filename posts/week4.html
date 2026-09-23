@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+    <title>Week 4 · Communities</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="icon" type="image/png" href="../images/neural.png" />
+    <style>
+      .post-page { max-width: 1120px; margin: 0 auto; padding: 95px 8vw 130px; }
+      .post-page-header { max-width: 900px; border-bottom: 1px solid var(--line); padding-bottom: 42px; }
+      .post-page h1 { margin: 28px 0 20px; font-size: clamp(50px, 9vw, 112px); }
+      .post-body { max-width: 920px; margin: 60px auto 0; }
+      .post-dek, .post-body p { color: #c9bdcc; line-height: 1.6; }
+      .post-dek { font-size: 18px; max-width: 760px; }
+      .post-body h2 { font-size: clamp(32px, 5vw, 52px); letter-spacing: -.06em; margin: 80px 0 18px; }
+      .post-body h3 { color: var(--lilac); font: 25px var(--display); letter-spacing: -.04em; margin: 48px 0 12px; text-transform: uppercase; }
+      .post-body p { color: #c9bdcc; font-size: 16px; line-height: 1.65; max-width: 720px; }
+      .post-body strong { color: var(--paper); }
+      .post-body > section { margin-top: 90px; }
+      .section-nav + section { margin-top: 0; }
+      .section-nav { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 28px 0 0; padding-top: 18px; border-top: 1px solid var(--line); }
+      .section-nav a { color: var(--lilac); font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+      .section-nav a:hover { color: var(--magenta); }
+      .placeholder, .go-nuts { border-left: 3px solid var(--magenta); background: #110d19; padding: 4px 20px 18px; margin-top: 30px; }
+      .placeholder h3 { margin-top: 18px; }
+      .tag { color: var(--lilac); font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+      @media (max-width: 780px) {
+        .post-page { padding: 60px 8vw 90px; }
+        .post-body { margin-top: 40px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="marvel-easter-eggs" aria-hidden="true">
+      <img class="spider-web" src="../images/spider-web.png" alt="" />
+      <img class="spider-eyes" src="../images/spiderman-eyes.png" alt="" />
+    </div>
+    <header class="site-header">
+      <a class="brand" href="../index.html" aria-label="Networks are awesome!! - home"><span class="brand-mark">N<span>/</span>A</span><span class="brand-name">Networks<br /><em>are awesome!!</em></span></a>
+      <nav class="nav" aria-label="Main navigation">
+        <a href="../index.html#graph">THE GRAPH</a>
+        <a href="../index.html#about">ABOUT THIS PROJECT</a>
+        <a href="../index.html#posts">DISPATCHES</a>
+      </nav>
+      <a class="issue-tag" href="../index.html#posts">VOL. 01 <span>→</span></a>
+    </header>
+
+    <main class="post-page">
+      <header class="post-page-header">
+        <div class="section-kicker">WEEK 04 · 23.09.26 · COMMUNITIES</div>
+        <h1>Groups have<br /><span>a Story</span><span>.</span></h1>
+        <p class="post-dek">This week we zoom out from individual philosophers and ask what happens when connections organize themselves into communities — and what weighted links and backbones reveal that the full network hides.</p>
+      </header>
+      <article class="post-body">
+        <section id="network"><h2>Meet the philosophers<span>.</span></h2><p class="intro">Everyone on Wikipedia's seven lists of philosophers born before the 20th century. A directed edge means that one philosopher's article links to another. The edge weight counts how many times that link appears. For this week's analysis we collapse the two directions by summing their weights.</p><div class="placeholder"><h3>Analysis coming next</h3><p>The shared philosopher network will be explored here before the community analyses are added.</p><span class="tag">weighted network · philosophers</span></div></section>
+      </article>
+    </main>
+    <footer class="site-footer"><div class="footer-brand">N<span>/</span>A</div><p>Made with data, curiosity<br />and too many arrows.</p><div class="footer-meta">Social Graphs and Interactions · 2026—27<br /><a href="../index.html">BACK TO HOME ↑</a></div></footer>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="week4.js"></script>
+  </body>
+</html>
