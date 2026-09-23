@@ -1,5 +1,13 @@
 const posts = [
   {
+    number: "04",
+    date: "WEEK 04 · 23.09.26",
+    type: "COMMUNITIES",
+    title: "Groups have a story",
+    summary: "Zooming out from individual philosophers to communities, overlapping groups, weighted ties, and network backbones.",
+    link: "posts/week4.html"
+  },
+  {
     number: "03",
     date: "WEEK 03 · 16.09.26",
     type: "CENTRALITY / NULL MODELS",
