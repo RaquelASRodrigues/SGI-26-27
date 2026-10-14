@@ -1,5 +1,13 @@
 const posts = [
   {
+    number: "05",
+    date: "WEEK 05 · 30.09.26",
+    type: "TEXT ANALYSIS / N-GRAMS / BOW SEARCH / LOUVAIN",
+    title: "How much of Marvel's Wikipedia is copied from itself, and is it prose or scaffolding?",
+    summary: "An in-depth text analysis of 303 Marvel Wikipedia articles: separating shared prose from boilerplate scaffolding, evaluating BoW cosine search failures, fitting Heaps' Law, and testing Louvain community language models.",
+    link: "posts/week5.html"
+  },
+  {
     number: "04",
     date: "WEEK 04 · 23.09.26",
     type: "COMMUNITIES",
