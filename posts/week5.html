@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="How much of Marvel's Wikipedia is copied from itself, and is it prose or scaffolding?" />
+    <title>Self-copying comics · Networks are awesome!!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="icon" type="image/png" href="../images/neural.png" />
+    <style>
+      .post-page { max-width: 1120px; margin: 0 auto; padding: 95px 8vw 130px; }
+      .post-page-header { max-width: 900px; border-bottom: 1px solid var(--line); padding-bottom: 42px; }
+      .post-page h1 { margin: 28px 0 20px; font-size: clamp(50px, 9vw, 112px); }
+      .post-dek, .post-body p { color: #c9bdcc; line-height: 1.6; }
+      .post-dek { font-size: 18px; max-width: 760px; }
+      .post-body { max-width: 980px; margin: 60px auto 0; }
+      .post-body h2 { font-size: clamp(32px, 5vw, 52px); letter-spacing: -.06em; margin: 80px 0 18px; }
+      .post-body h3 { color: var(--lilac); font: 22px var(--display); letter-spacing: -.04em; line-height: 1.15; margin: 35px 0 12px; text-transform: uppercase; }
+      .small-note { color: var(--muted); font: 10px/1.5 var(--mono); }
+      .formula { border-left: 3px solid var(--magenta); padding: 4px 0 4px 20px; margin: 24px 0; color: var(--paper); font: 13px/1.6 var(--mono); }
+      .controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 22px 0 14px; }
+      .week5-button, .week5-select, .week5-input { border: 1px solid rgba(189,125,255,.55); background: #110d19; color: var(--paper); font: 11px var(--mono); padding: 10px 12px; }
+      .week5-button { cursor: pointer; }
+      .week5-button:hover, .week5-button.is-active { background: var(--lilac); color: var(--ink); }
+      .week5-button.magenta.is-active, .week5-button.magenta:hover { background: var(--magenta); }
+      .week5-select, .week5-input { min-height: 38px; }
+      .week5-select { min-width: 0; max-width: 100%; }
+      #edge-picker { width: min(100%, 560px); }
+      .week5-input { width: min(100%, 560px); }
+      .week5-select:focus, .week5-input:focus, .week5-button:focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; }
+      .widget-card { border: 1px solid rgba(189,125,255,.42); background: #110d19; padding: 18px; }
+      .copy-stage { position: relative; min-height: 530px; border: 1px solid rgba(189,125,255,.4); background: #0d0a12; }
+      #copy-canvas { display: block; width: 100%; height: 530px; cursor: crosshair; }
+      .copy-legend { position: absolute; top: 12px; left: 14px; color: var(--muted); font: 10px/1.5 var(--mono); pointer-events: none; }
+      .copy-legend b { color: var(--magenta); }
+      .copy-metrics { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin: 20px 0; }
+      .metric-tile { border-top: 1px solid var(--line); padding: 14px 0; }
+      .metric-value { display: block; color: var(--lilac); font: clamp(22px,3vw,34px) var(--display); }
+      .metric-label { display: block; margin-top: 6px; color: var(--muted); font: 9px/1.4 var(--mono); text-transform: uppercase; }
+      .edge-detail { margin-top: 16px; border-left: 3px solid var(--magenta); padding: 16px 18px; background: rgba(189,125,255,.06); }
+      .edge-detail h3 { margin: 0 0 10px; color: var(--paper); }
+      .passage-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 14px; }
+      .passage { border: 1px solid var(--line); padding: 14px; color: #d8cddd; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+      .passage-label { display: block; margin-bottom: 8px; color: var(--magenta); font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+      .passage a { color: var(--lilac); text-decoration: underline; }
+      .evidence-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 24px; }
+      .evidence-card { border-left: 3px solid var(--lilac); padding: 16px 18px; background: #110d19; }
+      .evidence-card blockquote { margin: 12px 0; color: var(--paper); font-size: 14px; line-height: 1.6; }
+      .evidence-card a, .text-link-inline { color: var(--lilac); text-decoration: underline; }
+      .result-list { display: grid; gap: 9px; margin: 14px 0 0; padding: 0; list-style: none; }
+      .search-result { display: grid; grid-template-columns: 30px minmax(120px,1fr) 70px; gap: 10px; align-items: start; border-top: 1px solid var(--line); padding: 10px 0; color: #d8cddd; font-size: 12px; }
+      .search-rank { color: var(--magenta); font: 12px var(--mono); }
+      .search-score { color: var(--lilac); font: 11px var(--mono); text-align: right; }
+      .search-contrib { display: block; margin-top: 4px; color: var(--muted); font: 9px/1.5 var(--mono); }
+      .failure-note { margin-top: 14px; border-left: 3px solid var(--magenta); padding: 10px 14px; color: #d8cddd; font-size: 12px; }
+      .chart-svg { width: 100%; height: 360px; display: block; border: 1px solid rgba(189,125,255,.42); background: #110d19; }
+      .chart-axis path, .chart-axis line { stroke: rgba(242,234,245,.3); }
+      .chart-axis text, .chart-label { fill: var(--paper); font: 10px var(--mono); }
+      .chart-grid line { stroke: rgba(125,46,216,.22); }
+      .chart-grid path { display: none; }
+      .chart-point { fill: var(--magenta); opacity: .75; }
+      .chart-point.focus { fill: var(--lilac); stroke: var(--paper); stroke-width: 1.5; opacity: 1; }
+      .community-sample { min-height: 210px; white-space: pre-wrap; color: #e0d6e3; font: 12px/1.7 var(--mono); }
+      .negative-result { border-left: 3px solid var(--magenta); padding: 15px 18px; background: rgba(232,78,131,.08); }
+      .weird-list { width: 100%; border-collapse: collapse; }
+      .weird-list th { color: var(--magenta); font: 9px var(--mono); letter-spacing: .07em; text-align: left; text-transform: uppercase; padding: 0 8px 10px 0; }
+      .weird-list td { border-top: 1px solid var(--line); padding: 10px 8px 10px 0; color: #d8cddd; font-size: 12px; }
+      .weird-list td:not(:first-child) { color: var(--lilac); font: 11px var(--mono); }
+      .weird-list tr.is-selected td { background: rgba(232,78,131,.1); color: var(--paper); }
+      .weird-excerpt { margin-top: 14px; border-left: 3px solid var(--magenta); padding: 14px 18px; background: #110d19; color: #d8cddd; white-space: pre-wrap; font: 11px/1.6 var(--mono); }
+      .loading, .widget-error { color: var(--muted); font: 11px/1.5 var(--mono); padding: 14px 0; }
+      .widget-error { color: var(--magenta); }
+      .text-link-inline { font-size: inherit; }
+      @media (max-width: 780px) {
+        .post-page { padding: 60px 8vw 90px; }
+        .copy-stage, #copy-canvas { min-height: 400px; height: 400px; }
+        .copy-metrics { grid-template-columns: 1fr; gap: 0; }
+        .passage-grid { grid-template-columns: 1fr; }
+        .search-result { grid-template-columns: 24px minmax(100px,1fr) 55px; }
+        .chart-svg { height: 310px; }
+        .widget-card { padding: 12px; }
+        .weird-list { min-width: 620px; }
+        .table-scroll { overflow-x: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="../index.html" aria-label="Networks are awesome!! - home"><span class="brand-mark">N<span>/</span>A</span><span class="brand-name">Networks<br /><em>are awesome!!</em></span></a>
+      <nav class="nav" aria-label="Main navigation"><a href="../index.html#graph">THE GRAPH</a><a href="../index.html#about">ABOUT THIS PROJECT</a><a href="../index.html#posts">DISPATCHES</a></nav>
+      <a class="issue-tag" href="../index.html#posts">VOL. 01 <span>→</span></a>
+    </header>
+    <main class="post-page">
+      <header class="post-page-header">
+        <div class="section-kicker">WEEK 05 · TEXT AS DATA · 02805</div>
+        <h1>Marvel<br /><span>echoes</span><span>.</span></h1>
+        <p class="post-dek">How much of Marvel's Wikipedia is copied from itself, and is it prose or scaffolding?</p>
+      </header>
+      <article class="post-body">
+        <section aria-labelledby="copy-heading">
+          <h2 id="copy-heading">A web of repeats<span>.</span></h2>
+          <p id="copy-method-intro">We compared exact word-token runs across the character pages. An edge joins two pages when they share a token shingle; its weight counts distinct shared shingles. That first pass makes almost the whole corpus look connected. Then we remove common shingles and keep only edges with a long shared prose run.</p>
+          <div class="copy-metrics" id="copy-metrics" aria-live="polite"><div class="loading">Loading measured network summary…</div></div>
+          <div class="controls-row" aria-label="Copy network view">
+            <button class="week5-button is-active" type="button" data-copy-mode="naive">NAIVE · ALL 8-GRAMS</button>
+            <button class="week5-button" type="button" data-copy-mode="filtered">FILTERED · DF ≤ 3 + 30-TOKEN PROSE</button>
+          </div>
+          <div class="copy-stage">
+            <canvas id="copy-canvas" role="img" aria-label="Interactive network of shared text between Marvel Wikipedia pages"></canvas>
+            <div class="copy-legend"><b>Click an edge</b> to inspect its shared run.<br />Node positions stay fixed when filtering.</div>
+          </div>
+          <div class="controls-row">
+            <label for="edge-picker" class="small-note">Keyboard edge picker</label>
+            <select id="edge-picker" class="week5-select"><option>Loading network…</option></select>
+            <button id="show-edge" class="week5-button" type="button">SHOW PASSAGE</button>
+          </div>
+          <div id="edge-detail" class="edge-detail" aria-live="polite"><p class="small-note">Choose an edge in the graph or picker to compare its longest shared text run.</p></div>
+          <p class="small-note" id="copy-method-note"></p>
+          <div class="formula" id="copy-surprise"></div>
+          <div class="evidence-grid" id="copy-evidence" aria-live="polite"></div>
+          <p class="small-note">Checked text: Wikipedia page extracts, attributed under CC BY-SA. Shared wording proves exact duplication in these supplied texts, not which page copied from which. N-gram shingles and the prose/listing classifier are heuristics; a filtered edge does not mean an entire article was copied.</p>
+        </section>
+
+        <section aria-labelledby="search-heading">
+          <h2 id="search-heading">Search by description<span>.</span></h2>
+          <p><strong>Asked.</strong> Can a plain bag-of-words search find a character from a short description? <strong>Did.</strong> Lowercased Unicode-letter tokens become count vectors; rank pages by cosine similarity, with an optional English stopword filter.</p>
+          <div class="widget-card">
+            <div class="controls-row" aria-label="Search query presets">
+              <button class="week5-button search-preset" type="button">Norse god of thunder</button>
+              <button class="week5-button search-preset" type="button">armored billionaire inventor</button>
+              <button class="week5-button search-preset" type="button">archer with trick arrows</button>
+              <button class="week5-button search-preset" type="button">what did the character eat for breakfast yesterday</button>
+            </div>
+            <div class="controls-row">
+              <label class="small-note" for="search-query">Query</label>
+              <input id="search-query" class="week5-input" type="search" placeholder="Describe a character…" autocomplete="off" />
+            </div>
+            <div class="controls-row">
+              <label class="small-note"><input id="stopword-toggle" type="checkbox" /> Remove spaCy English stopwords</label>
+              <span id="search-status" class="small-note" aria-live="polite">Search data loads when you start typing.</span>
+            </div>
+            <div id="search-failure" class="failure-note" hidden></div>
+            <ol id="search-results" class="result-list" aria-live="polite"></ol>
+          </div>
+          <p><strong>Saw.</strong> The search can return semantically nearby pages, but it can also rank by incidental word overlap. <strong>Checked in the text.</strong> The corpus slice has no plain Thor or main Iron Man node; it contains Thor Girl and Iron Man variants instead. <strong>Limitation.</strong> Cosine over word counts cannot infer synonyms, entity identity, or whether a query is answerable from these character pages.</p>
+          <p class="small-note">The browser tokenizer is <code>/\p{L}+(?:['’]\p{L}+)*/gu</code>, lowercased, with punctuation and number-only tokens dropped. Its Python counterpart uses Unicode letter categories. The build exports Python-tokenized fixtures and checks them against the browser tokenizer.</p>
+          <div class="formula">What surprised me: the search failure is often structural, not algorithmic. A query for Norse thunder-god Thor cannot return a plain Thor page that is absent from this graph slice.</div>
+        </section>
+
+        <section aria-labelledby="network-metrics-heading">
+          <h2 id="network-metrics-heading">Words, links, and length<span>.</span></h2>
+          <p><strong>Asked.</strong> Do text mentions align with directed links, how does vocabulary accumulate, and do more connected characters have longer pages? <strong>Did.</strong> Matched target-page title strings (including undisambiguated forms) in source pages, fitted Heaps' law over seeded random page orders, and compared undirected degree with token length.</p>
+          <div class="widget-card">
+            <div class="controls-row" aria-label="Text and network measures">
+              <button class="week5-button is-active" type="button" data-metric-tab="mentions">MENTION-SUPPORTED EDGES</button>
+              <button class="week5-button" type="button" data-metric-tab="heaps">HEAPS' LAW</button>
+              <button class="week5-button" type="button" data-metric-tab="length">DEGREE × PAGE LENGTH</button>
+            </div>
+            <div id="metric-summary" aria-live="polite"></div>
+            <svg id="metrics-chart" class="chart-svg" role="img" aria-label="Interactive chart for selected text and network measure"></svg>
+            <p id="metric-detail" class="small-note"></p>
+          </div>
+          <p><strong>Saw.</strong> Many directed edges have a literal target-title mention; vocabulary growth follows a strong log-log fit, and degree correlates with article length. <strong>Checked in the text.</strong> Spider-Man has the highest degree in this slice, while Scarlet Witch has its longest page. <strong>Limitation.</strong> A name mention is not proof of a semantic relation; degree is only a visibility proxy, and correlation does not show that editors expand articles because characters are more connected in fiction.</p>
+          <div class="formula">What surprised me: the degree–length correlation is strong, but Scarlet Witch's page is longer than Spider-Man's despite much lower degree—connectivity and page length are related, not interchangeable.</div>
+        </section>
+
+        <section aria-labelledby="community-heading">
+          <h2 id="community-heading">A machine dreams in teams<span>.</span></h2>
+          <p><strong>Asked.</strong> Can a community-specific trigram model write a convincing character page? <strong>Did.</strong> Trained one model for each of the five largest communities, backed off trigram → bigram → unigram with a fixed multiplier per backoff, and generated fixed-seed samples after replacing detected character names and aliases with a neutral placeholder.</p>
+          <div class="widget-card">
+            <div class="controls-row">
+              <label for="community-picker" class="small-note">Largest own Louvain community</label>
+              <select id="community-picker" class="week5-select"></select>
+              <label for="sample-picker" class="small-note">Sample</label>
+              <select id="sample-picker" class="week5-select"></select>
+            </div>
+            <div id="community-sample" class="community-sample" aria-live="polite">Loading generated sample…</div>
+            <div id="community-summary"></div>
+          </div>
+          <div class="negative-result"><strong>Negative result.</strong> We expected plausible fragments; the generated passages remain unreadable mixtures of biographies, reviews, issue listings, and plots even with punctuation retained and names masked.</div>
+          <p><strong>Saw.</strong> The name-free centroid baseline exceeds chance, but the text does not read like a page. <strong>Checked in the text.</strong> All generated samples were read; residual phrases such as section headings and issue titles remain. <strong>Limitation.</strong> The centroid uses the same community corpus that trained the generator, so this is not a held-out classification result; the alias mask is also not a full entity recognizer.</p>
+          <div class="formula">What surprised me: without grammar or syntax structures, the model stayed unreadable. In the unmasked run, character-name leakage alone made community lookup trivial.</div>
+        </section>
+
+        <section aria-labelledby="weird-heading">
+          <h2 id="weird-heading">A weirdness leaderboard<span>.</span></h2>
+          <p><strong>Asked.</strong> Which page looks most unlike its length peers? <strong>Did.</strong> Ranked TTR, non-alphabetic share, zlib ratio, and distance from the corpus centroid within equal-count page-length bins, then averaged percentile ranks.</p>
+          <div class="widget-card">
+            <div class="table-scroll">
+              <table class="weird-list">
+                <thead><tr><th>Rank</th><th>Page</th><th>Tokens</th><th>Average rank</th></tr></thead>
+                <tbody id="weird-rows"></tbody>
+              </table>
+            </div>
+            <div class="controls-row">
+              <label for="weird-picker" class="small-note">Inspect page text</label>
+              <select id="weird-picker" class="week5-select"></select>
+            </div>
+            <div id="weird-detail" class="weird-excerpt" aria-live="polite"></div>
+          </div>
+          <p><strong>Saw.</strong> Shamrock, Guardsman, and Super Rabbit rank highly. <strong>Checked in the text.</strong> Shamrock's luck/poltergeist premise and Super Rabbit's talking-animal premise are genuine content; Super Rabbit also has dates, issue numbers, and currency symbols that affect the measures. <strong>Limitation.</strong> Decile controls reduce length effects but do not remove small-sample effects; this is a heuristic ranking, not an objective weirdness score.</p>
+          <div class="formula">What surprised me: Super Rabbit ranks highly partly through real subject-matter distinctiveness and partly through formatting-heavy publication history.</div>
+        </section>
+      </article>
+    </main>
+    <footer class="site-footer"><div class="footer-brand">N<span>/</span>A</div><p>Made with data, curiosity<br />and too many arrows.</p><div class="footer-meta">Social Graphs and Interactions · 2026—27<br /><a href="../index.html">BACK TO HOME ↑</a></div></footer>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="week5.js"></script>
+  </body>
+</html>
