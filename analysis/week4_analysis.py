@@ -15,8 +15,10 @@ def main():
     G.add_nodes_from(nodes.node_id)
 
     for s,t,w in edges.itertuples(index=False):
-        if G.has_edge(s,t):G[s][t]["weight"]+=w
-        else:G.add_edge(s,t,weight=w)
+        if G.has_edge(s,t):
+            G[s][t]["weight"] += w
+        else:
+            G.add_edge(s,t,weight=w)
     giant_nodes=max(nx.connected_components(G),key=len);giant=G.subgraph(giant_nodes)
     rows=nodes.set_index("node_id")
     payload={"meta":{"title":"Week 4 · Philosophers","source":"Wikipedia philosopher lists"},"stats":{"nodes":G.number_of_nodes(),"directed_edges":len(edges),"links":G.number_of_edges(),"giant_nodes":giant.number_of_nodes(),"giant_links":giant.number_of_edges()},"nodes":[],"links":[]}

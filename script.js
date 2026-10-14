@@ -1,5 +1,13 @@
 const posts = [
   {
+    number: "06",
+    date: "WEEK 06 · 07.10.26",
+    type: "TEXT CLASSIFICATION / COMMUNITIES / TF-IDF",
+    title: "When words choose a team",
+    summary: "Can language recover a link-defined Marvel community? Held-out text predictions expose where page prose and network structure disagree.",
+    link: "posts/week6.html"
+  },
+  {
     number: "05",
     date: "WEEK 05 · 30.09.26",
     type: "TEXT ANALYSIS / N-GRAMS / BOW SEARCH / LOUVAIN",
