@@ -64,6 +64,17 @@
       .assignment-line { color: var(--muted) !important; font: 10px/1.55 var(--mono) !important; }
       .method-note, .nmi-note { border-left: 3px solid var(--magenta); background: rgba(232,78,131,.07); color: #d8cddd; font-size: 13px; line-height: 1.6; margin: 24px 0 0; padding: 13px 16px; }
       .nmi-value { color: var(--magenta); font: 32px/1 var(--display); letter-spacing: -.03em; }
+      .null-benchmark { border-top: 1px solid var(--line); margin-top: 28px; padding-top: 16px; }
+      .null-benchmark h3 { margin-top: 0; }
+      .null-plot { display: block; width: 100%; max-height: 250px; }
+      .null-stats { color: #d8cddd; font: 10px/1.6 var(--mono); }
+      .overview-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 12px; }
+      .overview-community-select { border: 1px solid rgba(189,125,255,.55); background: #0d0a12; color: var(--paper); font: 11px var(--mono); min-height: 39px; max-width: min(100%, 430px); padding: 9px 11px; }
+      .overview-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-top: 18px; }
+      .overview-list { color: #d8cddd; font: 10px/1.6 var(--mono); max-height: 240px; overflow: auto; padding-left: 20px; }
+      .overview-list button { border: 0; background: none; color: var(--lilac); cursor: pointer; font: inherit; padding: 0; text-align: left; }
+      .overview-list button:hover { color: var(--paper); text-decoration: underline; }
+      .overview-connections { white-space: pre-line; }
       .overlap-stage { position: relative; min-height: 565px; border: 1px solid rgba(189,125,255,.42); background: #0d0a12; overflow: hidden; }
       #overlap-network { display: block; width: 100%; height: 565px; cursor: grab; touch-action: none; }
       #overlap-network:active { cursor: grabbing; }
@@ -102,6 +113,73 @@
       .case-evidence ul { color: #d8cddd; font-size: 13px; line-height: 1.65; padding-left: 22px; }
       .case-evidence li + li { margin-top: 8px; }
       .case-interpretation { border-left: 3px solid var(--magenta); background: rgba(232,78,131,.07); padding: 13px 16px; }
+      .backbone-direction-legend { display: flex; flex-wrap: wrap; gap: 9px 18px; align-items: center; border-top: 1px solid var(--line); color: var(--muted); font: 9px/1.5 var(--mono); margin: 0 0 12px; padding-top: 11px; }
+      .backbone-legend-item { display: inline-flex; gap: 7px; align-items: center; }
+      .backbone-legend-line { width: 22px; height: 0; border-top: 2px solid var(--lilac); }
+      .backbone-legend-line.incoming { border-color: #85b8ff; }
+      .backbone-legend-line.outgoing { border-color: #e84e83; }
+      .backbone-legend-line.removed { border-top-style: dashed; opacity: .45; }
+      .backbone-selection-metrics { margin: 0 0 12px; }
+      .backbone-selection-metrics .metric-value { font-size: clamp(18px, 2.4vw, 27px); }
+      .backbone-controls { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(210px, .8fr) auto; gap: 12px; align-items: end; margin-bottom: 16px; }
+      .alpha-control { display: grid; gap: 8px; min-width: 0; }
+      .alpha-control input { width: 100%; accent-color: var(--magenta); }
+      .alpha-readout { color: var(--lilac); font: 12px var(--mono); }
+      .backbone-views { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .backbone-view { min-width: 0; }
+      .backbone-view h3 { color: var(--paper); font: 13px var(--mono); margin: 0 0 8px; }
+      .backbone-stage { position: relative; border: 1px solid rgba(189,125,255,.42); background: #0d0a12; overflow: hidden; }
+      .backbone-network { display: block; width: 100%; height: 440px; cursor: grab; touch-action: none; }
+      .backbone-network:active { cursor: grabbing; }
+      .backbone-note { color: var(--muted); font: 9px/1.5 var(--mono); margin: 8px 0 0; min-height: 30px; }
+      .backbone-detail { min-height: 150px; }
+      .backbone-neighbours { color: var(--muted) !important; font: 10px/1.6 var(--mono) !important; max-height: 145px; overflow-y: auto; }
+      .weight-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 14px; margin-bottom: 14px; }
+      .weight-toggle { border: 1px solid rgba(189,125,255,.55); background: #0d0a12; color: var(--paper); cursor: pointer; font: 10px var(--mono); min-height: 39px; padding: 9px 12px; }
+      .weight-toggle:hover, .weight-toggle.is-active { background: var(--lilac); color: var(--ink); }
+      .weight-toggle:focus-visible, .weight-input:focus { outline: 2px solid var(--magenta); outline-offset: 2px; }
+      .weight-input { border: 1px solid rgba(189,125,255,.55); background: #0d0a12; color: var(--paper); font: 11px var(--mono); min-height: 39px; padding: 9px 11px; width: min(100%, 390px); }
+      .weight-stage { position: relative; border: 1px solid rgba(189,125,255,.42); background: #0d0a12; overflow: hidden; }
+      #weight-network { display: block; width: 100%; height: 520px; cursor: grab; touch-action: none; }
+      #weight-network:active { cursor: grabbing; }
+      .weight-stage-note { position: absolute; left: 14px; top: 12px; max-width: 440px; color: var(--muted); font: 9px/1.5 var(--mono); pointer-events: none; }
+      .weight-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; color: var(--muted); font: 9px/1.5 var(--mono); margin: 12px 0 0; }
+      .weight-legend-item { display: inline-flex; gap: 7px; align-items: center; }
+      .weight-legend-line { display: inline-block; width: 23px; border-top: 1px solid var(--lilac); }
+      .weight-legend-line.medium { border-top-width: 3px; }
+      .weight-legend-line.heavy { border-top-width: 5px; }
+      .weight-legend-node { display: inline-block; width: 9px; height: 9px; border: 1px solid var(--magenta); border-radius: 50%; }
+      .weight-detail { min-height: 170px; }
+      .weight-edge-list { color: var(--muted) !important; font: 9px/1.55 var(--mono) !important; max-height: 190px; overflow: auto; white-space: pre-line; }
+      .partition-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 14px; margin-bottom: 16px; }
+      .partition-controls .control-group { display: grid; gap: 7px; }
+      .partition-select, .partition-input { border: 1px solid rgba(189,125,255,.55); background: #0d0a12; color: var(--paper); font: 11px var(--mono); min-height: 39px; padding: 9px 11px; }
+      .partition-select:focus-visible, .partition-input:focus { outline: 2px solid var(--magenta); outline-offset: 2px; }
+      .partition-input { width: min(100%, 390px); }
+      .partition-views { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .partition-view { min-width: 0; border: 1px solid rgba(189,125,255,.35); background: #100c16; padding: 12px; }
+      .partition-view h3 { color: var(--paper); font: 11px/1.5 var(--mono); margin: 0 0 9px; }
+      .partition-stage { border: 1px solid rgba(189,125,255,.42); background: #0d0a12; overflow: hidden; }
+      .partition-network { display: block; width: 100%; height: 390px; cursor: grab; touch-action: none; }
+      .partition-network:active { cursor: grabbing; }
+      .partition-view label { color: var(--muted); display: grid; font: 9px var(--mono); gap: 7px; margin: 12px 0 8px; }
+      .partition-sizes { color: var(--muted); font: 9px/1.6 var(--mono); min-height: 40px; overflow-wrap: anywhere; }
+      .partition-members { border-top: 1px solid var(--line); display: grid; gap: 5px; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); margin-top: 8px; max-height: 155px; overflow: auto; padding-top: 8px; }
+      .partition-members p { color: var(--muted); font: 9px/1.5 var(--mono); grid-column: 1 / -1; margin: 0; }
+      .partition-member, .partition-philosopher { border: 0; background: transparent; color: var(--lilac); cursor: pointer; font: 9px/1.4 var(--mono); padding: 3px 0; text-align: left; }
+      .partition-member:hover, .partition-philosopher:hover { color: var(--paper); text-decoration: underline; }
+      .partition-toggle { align-items: center; color: var(--muted); display: flex; font: 9px/1.4 var(--mono); gap: 7px; min-height: 39px; }
+      .partition-toggle input { accent-color: var(--magenta); }
+      .partition-table-wrap { border: 1px solid rgba(189,125,255,.3); margin-top: 12px; max-height: 430px; overflow: auto; }
+      .partition-table { border-collapse: collapse; font: 9px/1.5 var(--mono); min-width: 650px; width: 100%; }
+      .partition-table th, .partition-table td { border-bottom: 1px solid rgba(189,125,255,.16); padding: 7px 9px; text-align: left; }
+      .partition-table th { background: #17111f; color: var(--muted); position: sticky; top: 0; }
+      .partition-table td { color: #d8cddd; }
+      .partition-table tr.is-selected { background: rgba(232,78,131,.12); }
+      .partition-legend { color: var(--muted); font: 9px/1.6 var(--mono); margin: 10px 0; }
+      .partition-interpretation { border-left: 3px solid var(--magenta); background: rgba(232,78,131,.07); color: #e0d5e6; font-size: 12px; line-height: 1.6; margin: 12px 0 0; padding: 12px 15px; }
+      .partition-detail { min-height: 110px; margin-top: 14px; }
+      .range-labels { display: flex; justify-content: space-between; color: var(--muted); font: 9px var(--mono); }
       .loading, .widget-error { color: var(--muted); font: 11px/1.5 var(--mono); padding: 12px 0; }
       .widget-error { color: var(--magenta); }
       @media (max-width: 780px) {
@@ -112,6 +190,11 @@
         .overlap-stage, #overlap-network, .case-stage, #case-network { min-height: 440px; height: 440px; }
         .community-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; }
         .explorer-grid { grid-template-columns: 1fr; }
+        .backbone-controls, .backbone-views { grid-template-columns: 1fr; }
+        .backbone-network { height: 440px; }
+        .partition-views { grid-template-columns: 1fr; }
+        .partition-network { height: 400px; }
+        .overview-columns { grid-template-columns: 1fr; }
       }
     </style>
   </head>
@@ -173,6 +256,12 @@
               </aside>
             </div>
             <p class="method-note" id="method-note"></p>
+            <section class="null-benchmark" id="modularity-benchmark" aria-labelledby="null-benchmark-heading">
+              <h3 id="null-benchmark-heading">Is the observed modularity unusual under rewiring?</h3>
+              <p>A directed degree-preserving null model rewires arc endpoints while preserving every philosopher’s in- and out-degree and the directed arc count. The aggregated edge-weight values are shuffled across rewired arcs, so the global weight distribution and total weight are retained, but node strengths and weight-to-endpoint pairings are not. This tests structure against this specific null; it does not establish that detected groups are philosophical schools.</p>
+              <svg class="null-plot" id="modularity-null-plot" role="img" aria-label="Histogram of directed weighted Louvain modularity from randomized degree-preserving networks, compared with the observed score."></svg>
+              <p class="null-stats loading" id="modularity-null-stats">Loading the reproducible 100-network benchmark…</p>
+            </section>
           </div>
           <section aria-labelledby="comparison-heading">
             <h3 id="comparison-heading">Agreement is not a verdict.</h3>
@@ -183,11 +272,44 @@
         </section>
 
         <section id="overlap" aria-labelledby="overlap-heading">
-          <h2 id="overlap-heading">Which tradition is Aristotle really in?<span>.</span></h2>
+          <h2 id="overlap-heading">Where does Aristotle sit in the detected groups?<span>.</span></h2>
+          <p><strong>Research question:</strong> Do the structural communities in the philosopher network correspond to recognisable philosophical traditions, and how consistently do different algorithms identify them? The overview below describes actual detected groups by their graph structure; algorithmic group labels are not historical classifications.</p>
+          <div class="community-card" id="community-overview" aria-live="polite">
+            <h3>Whole-network community overview</h3>
+            <div class="overview-controls">
+              <label class="control-group" for="overview-method">
+                <span class="control-label">Partition method</span>
+                <select class="overlap-select" id="overview-method">
+                  <option value="louvain">Louvain</option>
+                  <option value="infomap">Infomap</option>
+                </select>
+              </label>
+              <label class="control-group" for="overview-community">
+                <span class="control-label">Detected community</span>
+                <select class="overview-community-select" id="overview-community"><option>Loading communities…</option></select>
+              </label>
+            </div>
+            <div class="community-metrics" id="overview-metrics"><div class="loading">Loading community characteristics…</div></div>
+            <div class="overview-columns">
+              <section class="selection-panel">
+                <h3>Members and leading members</h3>
+                <p class="small-note">Leaders are ranked by directed in-degree + out-degree within the selected group. Select a name to inspect their ego network below.</p>
+                <ol class="overview-list" id="overview-members"></ol>
+              </section>
+              <section class="selection-panel">
+                <h3>Strongest internal article links</h3>
+                <p class="small-note">Weights count aggregated links between Wikipedia articles; they are not measures of philosophical affinity.</p>
+                <div class="overview-list overview-connections" id="overview-connections"></div>
+              </section>
+            </div>
+            <p class="small-note" id="overview-overlap"></p>
+            <p class="method-note" id="overview-note">Community sizes and internal arcs are calculated from the actual directed graph. Infomap’s 68 isolates are unassigned in its Week 4 partition and excluded from its listed communities; they remain in the node dataset.</p>
+          </div>
           <p>Follow Aristotle’s actual Wikipedia-article links. Each directed line is coloured by its computed link community; hover to inspect the source, target, direction, weight and assignment. Click a neighbour—or choose someone in a selected group—to follow their own connections.</p>
           <p><strong>What “community” means here:</strong> link communities compare links by the Jaccard similarity of the inclusive neighbourhoods of their endpoints, hierarchically cluster similar links, then select a cut with maximum partition density. Communities are groups of similar links, not exclusive sets of philosophers: a philosopher can inherit several memberships when their incident links fall into different groups. IDs are algorithmic structural labels, not verified philosophical traditions; the network records article relationships, not similarity of philosophical ideas.</p>
           <p class="small-note">The link method symmetrizes the directed graph by collapsing reciprocal source–target pairs into one undirected connection and summing their weights in that projection. Similarity uses binary neighbourhoods, so the summed weights do not affect clustering. The visualization retains each original directed arc and weight, colouring it with the computed community of its undirected pair.</p>
-          <p>A k-clique is a set of <em>k</em> philosophers with a connection between every pair. K-clique percolation forms node communities by joining cliques that share <em>k</em>−1 philosophers, so those communities can overlap. The comparison precomputes <em>k</em>=3, 4 and 5 on a binary undirected projection: a pair is connected if at least one directed article link exists either way; reciprocal links collapse, weights are ignored. K-clique results assign memberships to nodes, not edges.</p>
+          <p>An individual <em>k</em>-clique is exactly <em>k</em> philosophers with a connection between every pair. K-clique percolation joins such cliques when they share <em>k</em>−1 philosophers, so a resulting community can contain far more than <em>k</em> nodes and can overlap another community. The comparison precomputes <em>k</em>=3, 4 and 5 on a binary undirected projection: a pair is connected if at least one directed article link exists either way; reciprocal links collapse, weights are ignored, and the source has no self-loops. K-clique results assign memberships to nodes, not edges.</p>
+          <p class="small-note">The initial view is Aristotle’s ego network—only his immediate neighbours and actual incident arcs. Choose a community to open the full network with its computed members and edges highlighted; the optional full-network view remains available. In every view, k-clique communities do not create synthetic edges.</p>
           <div class="community-card" id="case-explorer" aria-live="polite">
             <div class="case-controls" aria-label="Aristotle case-study controls">
               <label class="control-group" for="case-search">
@@ -210,11 +332,18 @@
                 <span class="control-label">Selected community</span>
                 <select class="case-select" id="case-community"><option>Loading memberships…</option></select>
               </label>
+              <label class="control-group" for="case-view">
+                <span class="control-label">Network view</span>
+                <select class="case-select" id="case-view">
+                  <option value="ego" selected>Selected philosopher · ego network</option>
+                  <option value="full">Full network</option>
+                </select>
+              </label>
               <button class="reset-button" id="case-reset" type="button">RETURN TO ARISTOTLE</button>
             </div>
             <div class="case-stage" id="case-stage">
               <canvas id="case-network" role="img" aria-label="Aristotle’s ego network. Directed links are coloured by edge-community assignment; select a philosopher or community to explore."></canvas>
-              <div class="case-stage-note"><b>Scroll / pinch to zoom · click a node to follow it.</b><br />Colours show edge communities; arrows preserve source → target. Selecting a group adds its computed links and members; k-clique halos mark node-community members while edge colours still show link assignments.</div>
+              <div class="case-stage-note"><b>Scroll / pinch to zoom · click a node to follow it.</b><br />Arrows preserve source → target. Link colours are computed edge assignments; amber outlines mark selected node-community members. Reciprocal arcs curve apart.</div>
               <div class="case-tooltip" id="case-tooltip" role="status"></div>
             </div>
             <div class="community-metrics" id="case-metrics"><div class="loading">Loading Aristotle’s network…</div></div>
@@ -231,10 +360,121 @@
           </div>
 
           <section class="case-evidence" aria-labelledby="case-evidence-heading">
-            <h3 id="case-evidence-heading">So, which tradition is Aristotle in?</h3>
+            <h3 id="case-evidence-heading">What does Aristotle’s network position show?</h3>
             <ul id="case-evidence"><li class="loading">Calculating evidence from the precomputed network results…</li></ul>
             <p class="case-interpretation" id="case-interpretation"></p>
           </section>
+        </section>
+
+        <section id="backbone" aria-labelledby="backbone-heading">
+          <h2 id="backbone-heading">What survives a backbone filter?<span>.</span></h2>
+          <p>A statistical backbone asks which weighted connections stand out relative to a network null model—not which links are “important” in every historical sense. The disparity filter tests each directed edge against the source’s outgoing and target’s incoming weight distributions.</p>
+          <p><strong>Parameter α is a significance threshold.</strong> For each endpoint, the filter compares an edge’s share of that endpoint’s total strength with a uniform allocation across its distinct neighbors. It keeps the arc if its disparity tail probability is at most α at either endpoint (the OR rule). Direction is preserved; incoming and outgoing tests are separate. Repeated records for the same directed pair are combined by summing their weights. A smaller α is stricter.</p>
+          <div class="community-card" id="backbone-explorer" aria-live="polite">
+            <div class="backbone-controls">
+              <label class="control-group" for="backbone-search">
+                <span class="control-label">Find a philosopher</span>
+                <input class="philosopher-input" id="backbone-search" type="search" list="backbone-options" autocomplete="off" placeholder="Start typing a name…" />
+                <datalist id="backbone-options"></datalist>
+              </label>
+              <label class="alpha-control" for="backbone-alpha">
+                <span class="control-label">Disparity significance threshold · α <span class="alpha-readout" id="backbone-alpha-value">0.050</span></span>
+                <input id="backbone-alpha" type="range" min="0.001" max="1" step="0.001" value="0.05" aria-describedby="backbone-alpha-help" />
+                <span class="range-labels"><span>0.001 · stricter</span><span>1.000 · all links</span></span>
+              </label>
+              <button class="reset-button" id="backbone-reset" type="button">CLEAR SELECTION</button>
+            </div>
+            <p class="small-note" id="backbone-alpha-help">Both views use the same α. The left view keeps every original directed, weighted arc; the right keeps only arcs that pass the disparity filter. Counts are directed arcs, not unique neighbours—reciprocal arcs count separately. Line thickness always represents the original weight; direction colour and retention styling are independent.</p>
+            <div class="community-metrics backbone-selection-metrics" id="backbone-selection-metrics" aria-live="polite">
+              <div class="loading">Select a philosopher to count their incoming and outgoing directed arcs.</div>
+            </div>
+            <div class="backbone-direction-legend" role="group" aria-label="Backbone edge legend">
+              <span class="backbone-legend-item"><i class="backbone-legend-line incoming" aria-hidden="true"></i>Selected incoming · blue arrow points to philosopher</span>
+              <span class="backbone-legend-item"><i class="backbone-legend-line outgoing" aria-hidden="true"></i>Selected outgoing · pink arrow points away</span>
+              <span class="backbone-legend-item"><i class="backbone-legend-line" aria-hidden="true"></i>Retained · solid, brighter in original</span>
+              <span class="backbone-legend-item"><i class="backbone-legend-line removed" aria-hidden="true"></i>Not retained · dashed, dim in original</span>
+            </div>
+            <div class="backbone-views">
+              <section class="backbone-view" aria-labelledby="backbone-original-heading">
+                <h3 id="backbone-original-heading">ORIGINAL · ALL DIRECTED ARCS</h3>
+                <div class="backbone-stage"><canvas class="backbone-network" id="backbone-original" role="img" aria-label="Original directed and weighted philosophers network."></canvas></div>
+                <p class="backbone-note">All aggregated directed arcs. Selected arcs use direction colour; solid/brighter means retained, dashed/dimmer means filtered out. Reciprocal arcs curve apart.</p>
+              </section>
+              <section class="backbone-view" aria-labelledby="backbone-filtered-heading">
+                <h3 id="backbone-filtered-heading">DISPARITY BACKBONE · RETAINED ARCS</h3>
+                <div class="backbone-stage"><canvas class="backbone-network" id="backbone-filtered" role="img" aria-label="Directed disparity-filter backbone at the selected significance threshold."></canvas></div>
+                <p class="backbone-note">Same node coordinates and scale. Only retained arcs remain; selected incoming and outgoing arcs keep their independent direction colours.</p>
+              </section>
+            </div>
+            <div class="community-metrics" id="backbone-metrics"><div class="loading">Loading directed disparity scores…</div></div>
+            <p class="small-note">Component counts treat each retained directed arc as an undirected connection for reachability (weak components); all 1,444 philosophers, including isolates, are counted.</p>
+            <aside class="selection-panel backbone-detail" id="backbone-detail" aria-live="polite">
+              <h3>Choose a philosopher</h3>
+              <p>Search for a name or click either network to compare which of their incoming and outgoing connections survive.</p>
+            </aside>
+            <p class="method-note" id="backbone-method-note"></p>
+          </div>
+        </section>
+
+        <section id="weights" aria-labelledby="weights-heading">
+          <h2 id="weights-heading">Do connection weights change which philosophers belong together?</h2>
+          <p>The philosopher edge file records a directed link when one source article links to another target article. Its <code>weight</code> is the number of such links; duplicate directed source–target rows are summed before analysis. It counts article links, not philosophical agreement, relationship strength, or importance.</p>
+          <p>This is a controlled comparison: the unweighted representation gives every distinct directed arc weight 1, while the weighted representation keeps its aggregated data weight. Both use the same philosophers, including isolates, the same directed arcs, the same layout, and the same community algorithm settings within each comparison.</p>
+          <div class="community-card" id="weight-explorer" aria-live="polite">
+            <div class="partition-controls">
+              <label class="control-group" for="weight-algorithm">
+                <span class="control-label">Community algorithm</span>
+                <select class="partition-select" id="weight-algorithm">
+                  <option value="louvain">Louvain</option>
+                  <option value="infomap">Infomap</option>
+                </select>
+              </label>
+              <label class="control-group" for="weight-search">
+                <span class="control-label">Find / filter philosophers</span>
+                <input class="partition-input" id="weight-search" type="search" list="weight-options" autocomplete="off" placeholder="Start typing a name…" />
+                <datalist id="weight-options"></datalist>
+              </label>
+              <label class="partition-toggle"><input id="weight-changed-only" type="checkbox" checked /> Emphasize changed memberships only</label>
+              <button class="reset-button" id="weight-clear" type="button">CLEAR NODE / COMMUNITY SELECTION</button>
+            </div>
+            <p class="small-note">When this option is checked, changed philosophers remain prominent; unchanged nodes and unrelated connections are retained faintly as spatial context. Magenta rings mark the changed set used by both this view and the count.</p>
+            <p class="small-note">NMI compares each algorithm’s weighted and unweighted partitions on the same 1,444 philosophers: closer to 1 means greater agreement, closer to 0 means lower agreement; it does not say which partition is correct. Community IDs are arbitrary labels. The changed count compares each philosopher’s co-members, not its numeric ID; all isolates are retained as singleton communities in both Infomap runs and included in NMI.</p>
+            <div class="partition-views">
+              <section class="partition-view" aria-labelledby="weight-unweighted-heading">
+                <h3 id="weight-unweighted-heading">UNWEIGHTED PARTITION</h3>
+                <div class="partition-stage"><canvas class="partition-network" id="weight-unweighted-network" role="img" aria-label="Philosopher network colored by the selected algorithm's unweighted community assignments."></canvas></div>
+                <label for="weight-unweighted-community">Inspect an unweighted community
+                  <select class="partition-select" id="weight-unweighted-community"><option value="">Highlight a community…</option></select>
+                </label>
+                <p class="partition-sizes" id="weight-unweighted-sizes"></p>
+                <div class="partition-members" id="weight-unweighted-members" aria-live="polite"><p>Select a community to inspect its members.</p></div>
+              </section>
+              <section class="partition-view" aria-labelledby="weight-weighted-heading">
+                <h3 id="weight-weighted-heading">WEIGHTED PARTITION</h3>
+                <div class="partition-stage"><canvas class="partition-network" id="weight-weighted-network" role="img" aria-label="Philosopher network colored by the selected algorithm's weighted community assignments."></canvas></div>
+                <label for="weight-weighted-community">Inspect a weighted community
+                  <select class="partition-select" id="weight-weighted-community"><option value="">Highlight a community…</option></select>
+                </label>
+                <p class="partition-sizes" id="weight-weighted-sizes"></p>
+                <div class="partition-members" id="weight-weighted-members" aria-live="polite"><p>Select a community to inspect its members.</p></div>
+              </section>
+            </div>
+            <p class="partition-legend">Same directed arcs and layout in both panels · unweighted edges have equal thickness; weighted edge thickness reflects the aggregated count · categorical hues are assigned within each partition; IDs and colours are not cross-panel matches · selecting a community brightens its members and links while fading unrelated parts · magenta rings mark philosophers whose co-members change · selected arrows show source → target.</p>
+            <div class="community-metrics" id="weight-metrics"><div class="loading">Loading four community partitions…</div></div>
+            <div class="partition-table-wrap">
+              <table class="partition-table">
+                <thead><tr><th>Philosopher</th><th>Algorithm</th><th>Unweighted community</th><th>Weighted community</th><th>Membership comparison</th></tr></thead>
+                <tbody id="weight-rows"><tr><td colspan="5">Loading assignments…</td></tr></tbody>
+              </table>
+            </div>
+            <p class="small-note" id="weight-table-count"></p>
+            <aside class="selection-panel partition-detail" id="weight-detail" aria-live="polite">
+              <h3>Choose a philosopher</h3>
+              <p>Select a name in the table or either graph to compare its assignments.</p>
+            </aside>
+            <p class="partition-interpretation" id="weight-interpretation"></p>
+            <p class="method-note" id="weight-method-note"></p>
+          </div>
         </section>
       </article>
     </main>

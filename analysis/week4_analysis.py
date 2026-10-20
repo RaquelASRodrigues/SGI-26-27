@@ -364,7 +364,12 @@ def run_link_communities(graph, isolates):
 
 
 def build_aristotle_case_payload(graph, nodes, link_payload):
-    """Precompute k-clique node communities on a binary undirected projection."""
+    """Precompute k-clique node communities on a binary undirected projection.
+
+    The simple undirected projection collapses either-direction pairs, ignores
+    weights, and retains no self-loops (none occur in the source snapshot).
+    NetworkX percolates k-cliques that share k-1 nodes into node communities.
+    """
     try:
         aristotle_id = nodes.loc[nodes["name"] == "Aristotle", "node_id"].iloc[0]
     except IndexError as error:
@@ -376,8 +381,15 @@ def build_aristotle_case_payload(graph, nodes, link_payload):
     clique_graph = nx.Graph()
     clique_graph.add_nodes_from(node_ids)
     clique_graph.add_edges_from(graph.edges())
+    supported_k = (3, 4, 5)
+    clique_counts = dict.fromkeys(supported_k, 0)
+    for clique in nx.enumerate_all_cliques(clique_graph):
+        if len(clique) > max(supported_k):
+            break
+        if len(clique) in clique_counts:
+            clique_counts[len(clique)] += 1
     results = {}
-    for k in (3, 4, 5):
+    for k in supported_k:
         groups = [set(group) for group in nx.community.k_clique_communities(clique_graph, k)]
         groups.sort(key=lambda group: (-len(group), min(group), tuple(sorted(group))))
         memberships = defaultdict(list)
@@ -394,6 +406,7 @@ def build_aristotle_case_payload(graph, nodes, link_payload):
             },
             "stats": {
                 "communities": len(communities),
+                "k_cliques": clique_counts[k],
                 "assigned_nodes": len(memberships),
                 "membership_total": sum(map(len, memberships.values())),
                 "multiple_membership_nodes": sum(
@@ -409,13 +422,16 @@ def build_aristotle_case_payload(graph, nodes, link_payload):
             "preprocessing": (
                 "A simple undirected graph: reciprocal directed arcs collapse to one "
                 "connection, and edge weights are ignored. A connection exists if at "
-                "least one directed article link exists in either direction."
+                "least one directed article link exists in either direction. Duplicate "
+                "directed pairs are summed before projection; there are no self-loops "
+                "in the source snapshot."
             ),
             "interpretation": (
                 "Communities are unions of adjacent k-cliques, not edge assignments "
                 "or verified philosophical traditions."
             ),
         },
+        "undirected_edges": clique_graph.number_of_edges(),
         "aristotle_index": aristotle_index,
         "supported_k": [3, 4, 5],
         "source_stats": link_payload["stats"],
