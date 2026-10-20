@@ -1,11 +1,12 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="An interactive comparison of Louvain and Infomap communities in a directed, weighted philosopher network." />
     <title>Week 4 · Communities</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../styles.css" />
     <link rel="icon" type="image/png" href="../images/neural.png" />
@@ -13,24 +14,65 @@
       .post-page { max-width: 1120px; margin: 0 auto; padding: 95px 8vw 130px; }
       .post-page-header { max-width: 900px; border-bottom: 1px solid var(--line); padding-bottom: 42px; }
       .post-page h1 { margin: 28px 0 20px; font-size: clamp(50px, 9vw, 112px); }
-      .post-body { max-width: 920px; margin: 60px auto 0; }
+      .post-body { max-width: 980px; margin: 60px auto 0; }
       .post-dek, .post-body p { color: #c9bdcc; line-height: 1.6; }
       .post-dek { font-size: 18px; max-width: 760px; }
       .post-body h2 { font-size: clamp(32px, 5vw, 52px); letter-spacing: -.06em; margin: 80px 0 18px; }
-      .post-body h3 { color: var(--lilac); font: 25px var(--display); letter-spacing: -.04em; margin: 48px 0 12px; text-transform: uppercase; }
-      .post-body p { color: #c9bdcc; font-size: 16px; line-height: 1.65; max-width: 720px; }
+      .post-body h3 { color: var(--lilac); font: 22px/1.15 var(--display); letter-spacing: -.04em; margin: 32px 0 12px; text-transform: uppercase; }
+      .post-body p { color: #c9bdcc; font-size: 16px; line-height: 1.65; max-width: 760px; }
       .post-body strong { color: var(--paper); }
       .post-body > section { margin-top: 90px; }
       .section-nav + section { margin-top: 0; }
       .section-nav { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 28px 0 0; padding-top: 18px; border-top: 1px solid var(--line); }
       .section-nav a { color: var(--lilac); font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
       .section-nav a:hover { color: var(--magenta); }
-      .placeholder, .go-nuts { border-left: 3px solid var(--magenta); background: #110d19; padding: 4px 20px 18px; margin-top: 30px; }
-      .placeholder h3 { margin-top: 18px; }
-      .tag { color: var(--lilac); font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+      .tag, .small-note { color: var(--muted); font: 10px/1.55 var(--mono); letter-spacing: .03em; }
+      .tag { color: var(--lilac); text-transform: uppercase; }
+      .community-card { border: 1px solid rgba(189,125,255,.42); background: #110d19; padding: 18px; margin-top: 26px; }
+      .community-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 12px; margin-bottom: 16px; }
+      .control-group { display: grid; gap: 6px; min-width: min(100%, 210px); }
+      .control-label { color: var(--muted); font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+      .method-toggle, .community-button, .reset-button, .philosopher-input { border: 1px solid rgba(189,125,255,.55); background: #0d0a12; color: var(--paper); font: 11px var(--mono); min-height: 39px; padding: 9px 11px; }
+      .method-toggle, .community-button, .reset-button { cursor: pointer; }
+      .method-toggle:hover, .method-toggle.is-active, .community-button:hover, .community-button.is-active, .reset-button:hover { background: var(--lilac); color: var(--ink); }
+      .method-toggle.is-active { background: var(--magenta); border-color: var(--magenta); }
+      .philosopher-input { width: min(100%, 390px); }
+      .method-toggle:focus-visible, .community-button:focus-visible, .reset-button:focus-visible, .philosopher-input:focus { outline: 2px solid var(--magenta); outline-offset: 2px; }
+      .network-stage { position: relative; min-height: 565px; border: 1px solid rgba(189,125,255,.42); background: #0d0a12; overflow: hidden; }
+      #community-network { display: block; width: 100%; height: 565px; cursor: grab; touch-action: none; }
+      #community-network:active { cursor: grabbing; }
+      .stage-note { position: absolute; left: 14px; top: 12px; max-width: 310px; color: var(--muted); font: 10px/1.5 var(--mono); pointer-events: none; }
+      .stage-note b { color: var(--lilac); font-weight: 500; }
+      .community-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+      .metric-tile { border-top: 1px solid var(--line); min-width: 0; padding: 13px 0 5px; }
+      .metric-value { display: block; color: var(--lilac); font: clamp(21px, 3.1vw, 32px)/1 var(--display); overflow-wrap: anywhere; }
+      .metric-value.distribution-value { font: 11px/1.45 var(--mono); letter-spacing: -.04em; min-height: 32px; }
+      .metric-label { display: block; color: var(--muted); font: 9px/1.45 var(--mono); margin-top: 7px; text-transform: uppercase; }
+      .explorer-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(220px, .75fr); gap: 18px; align-items: start; }
+      .legend-panel, .selection-panel { border-top: 1px solid var(--line); padding-top: 13px; }
+      .legend-heading { color: var(--paper); font: 11px var(--mono); letter-spacing: .07em; margin: 0 0 9px; text-transform: uppercase; }
+      .community-legend { display: grid; gap: 6px; max-height: 315px; overflow-y: auto; padding-right: 4px; }
+      .community-button { align-items: center; display: grid; grid-template-columns: 12px minmax(0,1fr) auto; gap: 8px; min-height: 34px; padding: 7px 8px; text-align: left; }
+      .community-button .swatch { width: 10px; height: 10px; border-radius: 50%; }
+      .community-button .community-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .community-button .community-size { color: var(--muted); font-size: 10px; }
+      .community-button.isolate-button .swatch { border-radius: 2px; }
+      .selection-panel { min-height: 136px; }
+      .selection-panel h3 { color: var(--paper); font: 15px var(--display); margin: 0 0 8px; }
+      .selection-panel p { color: #d8cddd; font-size: 12px; line-height: 1.55; margin: 7px 0; }
+      .selection-panel a { color: var(--lilac); }
+      .assignment-line { color: var(--muted) !important; font: 10px/1.55 var(--mono) !important; }
+      .method-note, .nmi-note { border-left: 3px solid var(--magenta); background: rgba(232,78,131,.07); color: #d8cddd; font-size: 13px; line-height: 1.6; margin: 24px 0 0; padding: 13px 16px; }
+      .nmi-value { color: var(--magenta); font: 32px/1 var(--display); letter-spacing: -.03em; }
+      .loading, .widget-error { color: var(--muted); font: 11px/1.5 var(--mono); padding: 12px 0; }
+      .widget-error { color: var(--magenta); }
       @media (max-width: 780px) {
         .post-page { padding: 60px 8vw 90px; }
         .post-body { margin-top: 40px; }
+        .community-card { padding: 12px; }
+        .network-stage, #community-network { min-height: 440px; height: 440px; }
+        .community-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; }
+        .explorer-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
@@ -54,10 +96,53 @@
       <header class="post-page-header">
         <div class="section-kicker">WEEK 04 · 23.09.26 · COMMUNITIES</div>
         <h1>Groups have<br /><span>a Story</span><span>.</span></h1>
-        <p class="post-dek">This week we zoom out from individual philosophers and ask what happens when connections organize themselves into communities — and what weighted links and backbones reveal that the full network hides.</p>
+        <p class="post-dek">This week we zoom out from individual philosophers and ask what happens when connections organize themselves into communities — and what directed, weighted links reveal when two methods read the same network differently.</p>
       </header>
       <article class="post-body">
-        <section id="network"><h2>Meet the philosophers<span>.</span></h2><p class="intro">Everyone on Wikipedia's seven lists of philosophers born before the 20th century. A directed edge means that one philosopher's article links to another. The edge weight counts how many times that link appears. For this week's analysis we collapse the two directions by summing their weights.</p><div class="placeholder"><h3>Analysis coming next</h3><p>The shared philosopher network will be explored here before the community analyses are added.</p><span class="tag">weighted network · philosophers</span></div></section>
+        <section id="network" aria-labelledby="network-heading">
+          <h2 id="network-heading">Two ways to find a group<span>.</span></h2>
+          <p>Everyone on Wikipedia’s seven lists of philosophers born before the 20th century is here. A directed edge is one article linking to another; its weight counts repeated links. Explore the selected, precomputed partition below — no community detection runs in the browser.</p>
+          <div class="community-card" id="community-explorer" aria-live="polite">
+            <div class="community-controls" aria-label="Community explorer controls">
+              <div class="control-group">
+                <span class="control-label">Partition</span>
+                <div>
+                  <button class="method-toggle is-active" type="button" data-method="louvain" aria-pressed="true">LOUVAIN</button>
+                  <button class="method-toggle" type="button" data-method="infomap" aria-pressed="false">INFOMAP</button>
+                </div>
+              </div>
+              <label class="control-group" for="philosopher-search">
+                <span class="control-label">Find a philosopher</span>
+                <input class="philosopher-input" id="philosopher-search" type="search" list="philosopher-options" autocomplete="off" placeholder="Start typing a name…" />
+                <datalist id="philosopher-options"></datalist>
+              </label>
+              <button class="reset-button" id="reset-explorer" type="button">CLEAR HIGHLIGHT</button>
+            </div>
+            <div class="network-stage">
+              <canvas id="community-network" role="img" aria-label="Directed and weighted philosopher network. Choose Louvain or Infomap, then select a philosopher or a community."></canvas>
+              <div class="stage-note"><b>Scroll / pinch to zoom.</b><br />Click a node to reveal its immediate neighbours. Lines are directed records; their thickness follows edge weight. Arrows appear for selected links.</div>
+            </div>
+            <div class="community-metrics" id="community-metrics"><div class="loading">Loading the precomputed partitions…</div></div>
+            <div class="explorer-grid">
+              <section class="legend-panel" aria-labelledby="legend-heading">
+                <h3 class="legend-heading" id="legend-heading">Communities</h3>
+                <div class="community-legend" id="community-legend"></div>
+              </section>
+              <aside class="selection-panel" id="selection-detail" aria-live="polite">
+                <h3>Choose a node or a community</h3>
+                <p>Search for a philosopher, click a node, or select a row in the legend. The 68 isolates remain visible in the separate tray at right.</p>
+              </aside>
+            </div>
+            <p class="method-note" id="method-note"></p>
+          </div>
+        </section>
+
+        <section aria-labelledby="comparison-heading">
+          <h2 id="comparison-heading">Agreement is not a verdict<span>.</span></h2>
+          <p>Both methods see the same directed, weighted links, but they optimise different ideas of a community. Louvain seeks a partition with high modularity; Infomap looks for a concise description of flow through the network.</p>
+          <div class="nmi-note" id="nmi-note"><span class="loading">Loading the partition comparison…</span></div>
+          <p class="small-note" id="data-note"></p>
+        </section>
       </article>
     </main>
     <footer class="site-footer"><div class="footer-brand">N<span>/</span>A</div><p>Made with data, curiosity<br />and too many arrows.</p><div class="footer-meta">Social Graphs and Interactions · 2026—27<br /><a href="../index.html">BACK TO HOME ↑</a></div></footer>
