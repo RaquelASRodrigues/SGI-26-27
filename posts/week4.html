@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="An interactive comparison of Louvain and Infomap communities in a directed, weighted philosopher network." />
+    <meta name="description" content="Explore Louvain, Infomap, and overlapping link communities in the philosophers network." />
     <title>Week 4 · Communities</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -64,6 +64,44 @@
       .assignment-line { color: var(--muted) !important; font: 10px/1.55 var(--mono) !important; }
       .method-note, .nmi-note { border-left: 3px solid var(--magenta); background: rgba(232,78,131,.07); color: #d8cddd; font-size: 13px; line-height: 1.6; margin: 24px 0 0; padding: 13px 16px; }
       .nmi-value { color: var(--magenta); font: 32px/1 var(--display); letter-spacing: -.03em; }
+      .overlap-stage { position: relative; min-height: 565px; border: 1px solid rgba(189,125,255,.42); background: #0d0a12; overflow: hidden; }
+      #overlap-network { display: block; width: 100%; height: 565px; cursor: grab; touch-action: none; }
+      #overlap-network:active { cursor: grabbing; }
+      .overlap-note { position: absolute; left: 14px; top: 12px; max-width: 390px; color: var(--muted); font: 10px/1.5 var(--mono); pointer-events: none; }
+      .overlap-note b { color: var(--lilac); font-weight: 500; }
+      .overlap-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 12px; margin-bottom: 16px; }
+      .overlap-select { border: 1px solid rgba(189,125,255,.55); background: #0d0a12; color: var(--paper); font: 11px var(--mono); min-height: 39px; max-width: min(100%, 430px); padding: 9px 11px; }
+      .overlap-select:focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; }
+      .overlap-legend { display: grid; gap: 6px; max-height: 315px; overflow-y: auto; padding-right: 4px; }
+      .overlap-community-button { align-items: center; display: grid; grid-template-columns: 12px minmax(0,1fr) auto; gap: 8px; border: 1px solid rgba(189,125,255,.4); background: #0d0a12; color: var(--paper); cursor: pointer; font: 10px var(--mono); min-height: 32px; padding: 7px 8px; text-align: left; }
+      .overlap-community-button:hover, .overlap-community-button.is-active { background: var(--lilac); color: var(--ink); }
+      .overlap-community-button .swatch { width: 10px; height: 10px; border-radius: 50%; }
+      .overlap-community-button .community-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .overlap-community-button .community-size { color: var(--muted); }
+      .overlap-community-button.is-active .community-size { color: var(--ink); }
+      .overlap-detail { min-height: 150px; }
+      .overlap-detail h3 { color: var(--paper); font: 15px var(--display); margin: 0 0 8px; }
+      .overlap-detail p { color: #d8cddd; font-size: 12px; line-height: 1.55; margin: 7px 0; }
+      .overlap-detail a { color: var(--lilac); }
+      .membership-list { color: var(--muted) !important; font: 10px/1.55 var(--mono) !important; max-height: 105px; overflow-y: auto; }
+      .case-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 12px; margin-bottom: 16px; }
+      .case-controls [hidden] { display: none; }
+      .case-select { border: 1px solid rgba(189,125,255,.55); background: #0d0a12; color: var(--paper); font: 11px var(--mono); min-height: 39px; max-width: min(100%, 430px); padding: 9px 11px; }
+      .case-select:focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; }
+      .case-stage { position: relative; min-height: 565px; border: 1px solid rgba(189,125,255,.42); background: #0d0a12; overflow: hidden; }
+      #case-network { display: block; width: 100%; height: 565px; cursor: grab; touch-action: none; }
+      #case-network:active { cursor: grabbing; }
+      .case-stage-note { position: absolute; left: 14px; top: 12px; max-width: 450px; color: var(--muted); font: 10px/1.5 var(--mono); pointer-events: none; }
+      .case-stage-note b { color: var(--lilac); font-weight: 500; }
+      .case-tooltip { position: absolute; z-index: 2; display: none; max-width: min(360px, 80%); border: 1px solid rgba(189,125,255,.65); background: rgba(13,10,18,.96); color: var(--paper); font: 10px/1.5 var(--mono); padding: 8px 10px; pointer-events: none; white-space: pre-line; }
+      .case-members { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 6px; max-height: 250px; overflow-y: auto; padding-right: 4px; }
+      .case-member-button { border: 1px solid rgba(189,125,255,.4); background: #0d0a12; color: var(--paper); cursor: pointer; font: 10px/1.35 var(--mono); min-height: 34px; padding: 7px 8px; text-align: left; }
+      .case-member-button:hover, .case-member-button.is-active { background: var(--lilac); color: var(--ink); }
+      .case-evidence { border: 1px solid rgba(189,125,255,.35); background: #110d19; margin-top: 24px; padding: 18px; }
+      .case-evidence h3 { margin-top: 0; }
+      .case-evidence ul { color: #d8cddd; font-size: 13px; line-height: 1.65; padding-left: 22px; }
+      .case-evidence li + li { margin-top: 8px; }
+      .case-interpretation { border-left: 3px solid var(--magenta); background: rgba(232,78,131,.07); padding: 13px 16px; }
       .loading, .widget-error { color: var(--muted); font: 11px/1.5 var(--mono); padding: 12px 0; }
       .widget-error { color: var(--magenta); }
       @media (max-width: 780px) {
@@ -71,6 +109,7 @@
         .post-body { margin-top: 40px; }
         .community-card { padding: 12px; }
         .network-stage, #community-network { min-height: 440px; height: 440px; }
+        .overlap-stage, #overlap-network, .case-stage, #case-network { min-height: 440px; height: 440px; }
         .community-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; }
         .explorer-grid { grid-template-columns: 1fr; }
       }
@@ -96,7 +135,7 @@
       <header class="post-page-header">
         <div class="section-kicker">WEEK 04 · 23.09.26 · COMMUNITIES</div>
         <h1>Groups have<br /><span>a Story</span><span>.</span></h1>
-        <p class="post-dek">This week we zoom out from individual philosophers and ask what happens when connections organize themselves into communities — and what directed, weighted links reveal when two methods read the same network differently.</p>
+        <p class="post-dek">This week we zoom out from individual philosophers and ask what happens when connections organize themselves into communities — and how different network methods reveal different kinds of groups.</p>
       </header>
       <article class="post-body">
         <section id="network" aria-labelledby="network-heading">
@@ -135,13 +174,67 @@
             </div>
             <p class="method-note" id="method-note"></p>
           </div>
+          <section aria-labelledby="comparison-heading">
+            <h3 id="comparison-heading">Agreement is not a verdict.</h3>
+            <p>Louvain and Infomap use the directed, weighted graph but optimise different ideas of a community: Louvain seeks high modularity, while Infomap looks for a concise description of network flow.</p>
+            <div class="nmi-note" id="nmi-note"><span class="loading">Loading the partition comparison…</span></div>
+            <p class="small-note" id="data-note"></p>
+          </section>
         </section>
 
-        <section aria-labelledby="comparison-heading">
-          <h2 id="comparison-heading">Agreement is not a verdict<span>.</span></h2>
-          <p>Both methods see the same directed, weighted links, but they optimise different ideas of a community. Louvain seeks a partition with high modularity; Infomap looks for a concise description of flow through the network.</p>
-          <div class="nmi-note" id="nmi-note"><span class="loading">Loading the partition comparison…</span></div>
-          <p class="small-note" id="data-note"></p>
+        <section id="overlap" aria-labelledby="overlap-heading">
+          <h2 id="overlap-heading">Which tradition is Aristotle really in?<span>.</span></h2>
+          <p>Follow Aristotle’s actual Wikipedia-article links. Each directed line is coloured by its computed link community; hover to inspect the source, target, direction, weight and assignment. Click a neighbour—or choose someone in a selected group—to follow their own connections.</p>
+          <p><strong>What “community” means here:</strong> link communities compare links by the Jaccard similarity of the inclusive neighbourhoods of their endpoints, hierarchically cluster similar links, then select a cut with maximum partition density. Communities are groups of similar links, not exclusive sets of philosophers: a philosopher can inherit several memberships when their incident links fall into different groups. IDs are algorithmic structural labels, not verified philosophical traditions; the network records article relationships, not similarity of philosophical ideas.</p>
+          <p class="small-note">The link method symmetrizes the directed graph by collapsing reciprocal source–target pairs into one undirected connection and summing their weights in that projection. Similarity uses binary neighbourhoods, so the summed weights do not affect clustering. The visualization retains each original directed arc and weight, colouring it with the computed community of its undirected pair.</p>
+          <p>A k-clique is a set of <em>k</em> philosophers with a connection between every pair. K-clique percolation forms node communities by joining cliques that share <em>k</em>−1 philosophers, so those communities can overlap. The comparison precomputes <em>k</em>=3, 4 and 5 on a binary undirected projection: a pair is connected if at least one directed article link exists either way; reciprocal links collapse, weights are ignored. K-clique results assign memberships to nodes, not edges.</p>
+          <div class="community-card" id="case-explorer" aria-live="polite">
+            <div class="case-controls" aria-label="Aristotle case-study controls">
+              <label class="control-group" for="case-search">
+                <span class="control-label">Find a philosopher</span>
+                <input class="philosopher-input" id="case-search" type="search" list="case-options" autocomplete="off" value="Aristotle" placeholder="Start typing a name…" />
+                <datalist id="case-options"></datalist>
+              </label>
+              <label class="control-group" for="case-method">
+                <span class="control-label">Community method</span>
+                <select class="case-select" id="case-method">
+                  <option value="link">Link communities · edges</option>
+                  <option value="clique">k-clique percolation · nodes</option>
+                </select>
+              </label>
+              <label class="control-group" id="case-k-control" for="case-k" hidden>
+                <span class="control-label">Precomputed clique size (k)</span>
+                <select class="case-select" id="case-k"></select>
+              </label>
+              <label class="control-group" for="case-community">
+                <span class="control-label">Selected community</span>
+                <select class="case-select" id="case-community"><option>Loading memberships…</option></select>
+              </label>
+              <button class="reset-button" id="case-reset" type="button">RETURN TO ARISTOTLE</button>
+            </div>
+            <div class="case-stage" id="case-stage">
+              <canvas id="case-network" role="img" aria-label="Aristotle’s ego network. Directed links are coloured by edge-community assignment; select a philosopher or community to explore."></canvas>
+              <div class="case-stage-note"><b>Scroll / pinch to zoom · click a node to follow it.</b><br />Colours show edge communities; arrows preserve source → target. Selecting a group adds its computed links and members; k-clique halos mark node-community members while edge colours still show link assignments.</div>
+              <div class="case-tooltip" id="case-tooltip" role="status"></div>
+            </div>
+            <div class="community-metrics" id="case-metrics"><div class="loading">Loading Aristotle’s network…</div></div>
+            <div class="explorer-grid">
+              <section class="legend-panel" aria-labelledby="case-members-heading">
+                <h3 class="legend-heading" id="case-members-heading">Other philosophers in the selected community</h3>
+                <div class="case-members" id="case-members"></div>
+              </section>
+              <aside class="selection-panel" id="case-detail" aria-live="polite">
+                <h3>Loading computed memberships…</h3>
+              </aside>
+            </div>
+            <p class="method-note" id="case-method-note"></p>
+          </div>
+
+          <section class="case-evidence" aria-labelledby="case-evidence-heading">
+            <h3 id="case-evidence-heading">So, which tradition is Aristotle in?</h3>
+            <ul id="case-evidence"><li class="loading">Calculating evidence from the precomputed network results…</li></ul>
+            <p class="case-interpretation" id="case-interpretation"></p>
+          </section>
         </section>
       </article>
     </main>

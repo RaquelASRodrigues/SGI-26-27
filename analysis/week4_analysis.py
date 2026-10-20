@@ -1,15 +1,16 @@
 """Precompute the Week 4 philosopher community-detection explorer data.
 
-The browser consumes ``data/week4_communities.json`` and never re-runs either
-community-detection algorithm. The source data have one record per directed
-link, with a numeric weight. Duplicate source--target records are summed before
-analysis (the current frozen snapshot already has 11,135 unique pairs).
+The browser consumes the partition and link-community JSON files and never
+runs community detection. The source data have one record per directed link,
+with a numeric weight. Duplicate source--target records are summed before
+analysis (the current frozen snapshot has 11,135 unique directed pairs).
 """
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 import json
+import itertools
 from pathlib import Path
 
 from infomap import Infomap
@@ -23,6 +24,8 @@ DATA_DIR = PROJECT_ROOT / "data"
 NODES_PATH = DATA_DIR / "week4_philosophers_nodes.tsv"
 EDGES_PATH = DATA_DIR / "week4_philosophers_edges.tsv"
 OUTPUT_PATH = DATA_DIR / "week4_communities.json"
+OVERLAP_OUTPUT_PATH = DATA_DIR / "week4_link_communities.json"
+ARISTOTLE_OUTPUT_PATH = DATA_DIR / "week4_aristotle_case.json"
 LOUVAIN_SEEDS = range(20)
 INFOMAP_SEEDS = range(1, 21)
 LAYOUT_SEED = 260927
@@ -226,10 +229,205 @@ def method_payload(result, isolates, quality_name):
     return payload
 
 
+def _partition_density(edge_count, node_count):
+    """Ahn et al.'s density for one edge-community (zero for a single edge)."""
+    if node_count <= 2:
+        return 0.0
+    possible = (node_count - 2) * (node_count - 1) / 2
+    return max(0.0, (edge_count - (node_count - 1)) / possible)
+
+
+def run_link_communities(graph, isolates):
+    """Run the Ahn--Bagrow--Lehmann edge-based link-community method.
+
+    The published method is defined for undirected, unweighted topology. We
+    therefore collapse reciprocal directed pairs into one simple undirected
+    edge and use binary inclusive-neighbourhood Jaccard similarity for the
+    dendrogram. Original directed weighted records remain in the exported
+    display data and inherit their undirected pair's edge community.
+    """
+    undirected = nx.Graph()
+    undirected.add_nodes_from(node_id for node_id in graph if node_id not in isolates)
+    for source, target, attributes in graph.edges(data=True):
+        weight = float(attributes["weight"])
+        if undirected.has_edge(source, target):
+            undirected[source][target]["weight"] += weight
+        else:
+            undirected.add_edge(source, target, weight=weight)
+
+    undirected_edges = list(undirected.edges())
+    edge_index = {
+        frozenset((source, target)): index
+        for index, (source, target) in enumerate(undirected_edges)
+    }
+    inclusive = {
+        node_id: set(undirected.neighbors(node_id)) | {node_id}
+        for node_id in undirected
+    }
+    incident = defaultdict(list)
+    for index, (source, target) in enumerate(undirected_edges):
+        incident[source].append(index)
+        incident[target].append(index)
+
+    # A link-community dendrogram connects line-graph edges by Jaccard score.
+    similarities = defaultdict(list)
+    for shared_node, incident_edges in incident.items():
+        for first, second in itertools.combinations(incident_edges, 2):
+            first_edge = undirected_edges[first]
+            second_edge = undirected_edges[second]
+            first_other = first_edge[1] if first_edge[0] == shared_node else first_edge[0]
+            second_other = second_edge[1] if second_edge[0] == shared_node else second_edge[0]
+            left = inclusive[first_other]
+            right = inclusive[second_other]
+            union_size = len(left | right)
+            similarity = len(left & right) / union_size if union_size else 0.0
+            similarities[similarity].append((first, second))
+
+    parent = list(range(len(undirected_edges)))
+    edge_counts = [1] * len(undirected_edges)
+    component_nodes = [{source, target} for source, target in undirected_edges]
+    total_score = 0.0
+
+    def find(index):
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    def component_score(root):
+        return edge_counts[root] * _partition_density(
+            edge_counts[root], len(component_nodes[root])
+        )
+
+    best_density = -1.0
+    best_partition = None
+    # Descending values correspond to progressively less strict similarity
+    # thresholds. Evaluating once per score keeps equal-similarity merges tied.
+    for similarity in sorted(similarities, reverse=True):
+        for first, second in similarities[similarity]:
+            first_root = find(first)
+            second_root = find(second)
+            if first_root == second_root:
+                continue
+            total_score -= component_score(first_root) + component_score(second_root)
+            if edge_counts[first_root] < edge_counts[second_root]:
+                first_root, second_root = second_root, first_root
+            parent[second_root] = first_root
+            edge_counts[first_root] += edge_counts[second_root]
+            component_nodes[first_root].update(component_nodes[second_root])
+            total_score += component_score(first_root)
+        density = total_score / len(undirected_edges)
+        if density > best_density + 1e-12:
+            best_density = density
+            best_partition = [find(index) for index in range(len(undirected_edges))]
+
+    if best_partition is None:
+        best_partition = list(range(len(undirected_edges)))
+        best_density = 0.0
+    groups_by_root = defaultdict(list)
+    for edge_index_value, root in enumerate(best_partition):
+        groups_by_root[root].append(edge_index_value)
+    edge_groups = sorted(
+        groups_by_root.values(),
+        key=lambda group: (-len(group), min(group)),
+    )
+    edge_community = {
+        edge_id: community_id
+        for community_id, group in enumerate(edge_groups, start=1)
+        for edge_id in group
+    }
+    community_nodes = {
+        community_id: sorted(
+            set(itertools.chain.from_iterable(
+                (undirected_edges[edge_id] for edge_id in group)
+            ))
+        )
+        for community_id, group in enumerate(edge_groups, start=1)
+    }
+    memberships = defaultdict(set)
+    for community_id, node_ids in community_nodes.items():
+        for node_id in node_ids:
+            memberships[node_id].add(community_id)
+
+    pair_to_community = {
+        frozenset((source, target)): edge_community[index]
+        for index, (source, target) in enumerate(undirected_edges)
+    }
+    return {
+        "edge_count": len(undirected_edges),
+        "community_count": len(edge_groups),
+        "partition_density": best_density,
+        "edge_community": pair_to_community,
+        "community_nodes": community_nodes,
+        "memberships": {node_id: sorted(values) for node_id, values in memberships.items()},
+    }
+
+
+def build_aristotle_case_payload(graph, nodes, link_payload):
+    """Precompute k-clique node communities on a binary undirected projection."""
+    try:
+        aristotle_id = nodes.loc[nodes["name"] == "Aristotle", "node_id"].iloc[0]
+    except IndexError as error:
+        raise ValueError("The philosopher dataset must contain Aristotle.") from error
+    node_ids = list(nodes["node_id"])
+    node_index = {node_id: index for index, node_id in enumerate(node_ids)}
+    aristotle_index = node_index[aristotle_id]
+
+    clique_graph = nx.Graph()
+    clique_graph.add_nodes_from(node_ids)
+    clique_graph.add_edges_from(graph.edges())
+    results = {}
+    for k in (3, 4, 5):
+        groups = [set(group) for group in nx.community.k_clique_communities(clique_graph, k)]
+        groups.sort(key=lambda group: (-len(group), min(group), tuple(sorted(group))))
+        memberships = defaultdict(list)
+        communities = []
+        for community_id, group in enumerate(groups, start=1):
+            members = sorted(node_index[node_id] for node_id in group)
+            communities.append({"id": community_id, "size": len(members), "members": members})
+            for index in members:
+                memberships[index].append(community_id)
+        results[str(k)] = {
+            "communities": communities,
+            "memberships": {
+                str(index): community_ids for index, community_ids in memberships.items()
+            },
+            "stats": {
+                "communities": len(communities),
+                "assigned_nodes": len(memberships),
+                "membership_total": sum(map(len, memberships.values())),
+                "multiple_membership_nodes": sum(
+                    len(community_ids) > 1 for community_ids in memberships.values()
+                ),
+                "aristotle_memberships": memberships.get(aristotle_index, []),
+            },
+        }
+
+    return {
+        "meta": {
+            "method": "NetworkX k-clique percolation",
+            "preprocessing": (
+                "A simple undirected graph: reciprocal directed arcs collapse to one "
+                "connection, and edge weights are ignored. A connection exists if at "
+                "least one directed article link exists in either direction."
+            ),
+            "interpretation": (
+                "Communities are unions of adjacent k-cliques, not edge assignments "
+                "or verified philosophical traditions."
+            ),
+        },
+        "aristotle_index": aristotle_index,
+        "supported_k": [3, 4, 5],
+        "source_stats": link_payload["stats"],
+        "results": results,
+    }
+
+
 def main():
     nodes, edges, graph, isolates, input_edge_rows = load_graph()
     louvain = run_louvain(graph)
     infomap = run_infomap(graph)
+    overlap = run_link_communities(graph, isolates)
 
     assigned_by_infomap = set(infomap["partition"])
     if set(graph) - assigned_by_infomap != isolates:
@@ -240,7 +438,8 @@ def main():
         [infomap["partition"][node_id] for node_id in common_nodes],
     )
     positions = make_layout(graph, edges, isolates)
-    node_index = {node_id: index for index, node_id in enumerate(nodes["node_id"])}
+    node_ids_by_index = list(nodes["node_id"])
+    node_index = {node_id: index for index, node_id in enumerate(node_ids_by_index)}
     node_records = []
     for row in nodes.itertuples(index=False):
         node_id = row.node_id
@@ -288,6 +487,83 @@ def main():
     OUTPUT_PATH.write_text(
         json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
     )
+    node_records_by_id = {record["id"]: record for record in node_records}
+    overlap_memberships = overlap["memberships"]
+    overlap_communities = [
+        {
+            "id": community_id,
+            "edge_count": sum(
+                1 for value in overlap["edge_community"].values() if value == community_id
+            ),
+            "node_count": len(node_ids),
+            "members": [node_index[node_id] for node_id in node_ids],
+        }
+        for community_id, node_ids in sorted(overlap["community_nodes"].items())
+    ]
+    overlap_payload = {
+        "meta": {
+            "title": "Week 4 · Overlapping philosopher communities",
+            "method": "Ahn–Bagrow–Lehmann link communities",
+            "method_note": "This edge-based method clusters links by inclusive-neighbourhood Jaccard similarity and selects the dendrogram cut with maximum partition density. It returns edge communities; node memberships are derived from the edge communities incident to each node.",
+            "preprocessing": "The directed graph was projected to an undirected graph by collapsing reciprocal arcs and summing their weights. Link similarity uses binary inclusive neighbourhoods, so weights do not affect clustering; original directed weighted arcs remain in the display.",
+            "interpretation_note": "Community IDs are algorithmic groups, not named philosophical schools. A philosopher with several incident edge communities receives several memberships; isolated nodes receive none.",
+        },
+        "stats": {
+            "nodes": graph.number_of_nodes(),
+            "connected_nodes": graph.number_of_nodes() - len(isolates),
+            "isolated_nodes": len(isolates),
+            "directed_edges": graph.number_of_edges(),
+            "undirected_edges": overlap["edge_count"],
+            "communities": overlap["community_count"],
+            "partition_density": overlap["partition_density"],
+            "multiple_membership_nodes": sum(
+                len(overlap_memberships.get(node_id, [])) > 1 for node_id in graph
+            ),
+            "assigned_nodes": sum(bool(overlap_memberships.get(node_id)) for node_id in graph),
+            "membership_total": sum(len(values) for values in overlap_memberships.values()),
+            "membership_histogram": dict(
+                sorted(
+                    Counter(
+                        len(overlap_memberships.get(node_id, [])) for node_id in graph
+                    ).items()
+                )
+            ),
+        },
+        "communities": overlap_communities,
+        "nodes": [
+            {
+                "id": node_id,
+                "name": node_records_by_id[node_id]["name"],
+                "url": node_records_by_id[node_id]["url"],
+                "era": node_records_by_id[node_id]["era"],
+                "x": node_records_by_id[node_id]["x"],
+                "y": node_records_by_id[node_id]["y"],
+                "isolated": node_id in isolates,
+                "memberships": overlap_memberships.get(node_id, []),
+                "membership_count": len(overlap_memberships.get(node_id, [])),
+            }
+            for node_id in nodes["node_id"]
+        ],
+        "edges": [
+            {
+                "source": edge["source"],
+                "target": edge["target"],
+                "weight": edge["weight"],
+                "community": overlap["edge_community"][
+                    frozenset((node_ids_by_index[edge["source"]], node_ids_by_index[edge["target"]]))
+                ],
+            }
+            for edge in payload["edges"]
+        ],
+    }
+    OVERLAP_OUTPUT_PATH.write_text(
+        json.dumps(overlap_payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+    )
+    case_payload = build_aristotle_case_payload(graph, nodes, overlap_payload)
+    ARISTOTLE_OUTPUT_PATH.write_text(
+        json.dumps(case_payload, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
     print(f"Wrote {OUTPUT_PATH.relative_to(PROJECT_ROOT)}")
     print(
         f"Louvain: seed {louvain['seed']}, modularity {louvain['modularity']:.6f}, "
@@ -298,6 +574,16 @@ def main():
         f"{len(infomap['groups'])} communities"
     )
     print(f"NMI on {len(common_nodes)} shared connected nodes: {nmi:.6f}")
+    print(
+        f"Link communities: {overlap['community_count']} edge communities, "
+        f"partition density {overlap['partition_density']:.6f}, "
+        f"{overlap_payload['stats']['multiple_membership_nodes']} multiple-membership nodes"
+    )
+    for k, result in case_payload["results"].items():
+        print(
+            f"k-clique k={k}: {result['stats']['communities']} communities, "
+            f"{len(result['stats']['aristotle_memberships'])} Aristotle memberships"
+        )
 
 
 if __name__ == "__main__":
