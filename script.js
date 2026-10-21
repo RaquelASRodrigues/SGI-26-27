@@ -1,5 +1,13 @@
 const posts = [
   {
+    number: "07",
+    date: "WEEK 07 · 21.10.26",
+    type: "TEXT SIMILARITY / DIRECTED LINKS / TF-IDF",
+    title: "Similar stories, distant pages",
+    summary: "Do semantically similar Marvel pages link to one another? Compare TF-IDF neighbours with incoming and outgoing direct links.",
+    link: "posts/week7.html"
+  },
+  {
     number: "06",
     date: "WEEK 06 · 07.10.26",
     type: "TEXT CLASSIFICATION / COMMUNITIES / TF-IDF",

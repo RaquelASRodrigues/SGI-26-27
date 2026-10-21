@@ -28,7 +28,11 @@ An exploration of in-degree, out-degree, degree distributions, hubs, isolated no
 
 A comparison between the observed network and Erdős–Rényi, Barabási–Albert, Watts–Strogatz, and degree-preserving null models.
 
-Future weekly posts will be added under [`posts/`](posts/).
+### Week 7 — Text similarity and directed links
+
+An interactive comparison of full-page TF-IDF and MiniLM embedding cosine neighbours with incoming/outgoing direct Wikipedia links. Install the Week 7 embedding dependency with `python -m pip install -r requirements-week7.txt`, then regenerate browser data with `python analysis/week7_analysis.py`; the pinned MiniLM model is downloaded from Hugging Face and cached on first use if it is not already available. The script caches page embeddings in `data/week7_embeddings.npz` and also runs a fixed-network TF-IDF text-assignment permutation test.
+
+Each weekly post lives under [`posts/`](posts/) and is linked from the homepage dispatch list.
 
 ## Repository layout
 
