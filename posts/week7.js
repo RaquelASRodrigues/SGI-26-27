@@ -15,6 +15,7 @@ const fmt = d3.format(".3f");
 let data;
 let selectedId = "Spider-Man";
 let focusedId = null;
+let mxbaiAvailable = false;
 
 fetch("../data/week7_text_network.json")
   .then(response => {
@@ -32,13 +33,20 @@ fetch("../data/week7_text_network.json")
   });
 
 function initialise() {
-  if (!Array.isArray(data.similarities) || !Array.isArray(data.embedding_similarities)) {
-    throw new Error("Week 7 data must contain both TF-IDF and neural embedding similarity matrices.");
+  if (!Array.isArray(data.similarities) || !Array.isArray(data.lsa_similarities)
+      || !Array.isArray(data.embedding_similarities)) {
+    throw new Error("Week 7 data must contain TF-IDF, LSA, and MiniLM cosine matrices.");
   }
+  for (const [name, matrix] of [
+    ["TF-IDF", data.similarities],
+    ["LSA", data.lsa_similarities],
+    ["MiniLM", data.minilm_similarities || data.embedding_similarities]
+  ]) validateCosineMatrix(matrix, name);
   const characterSelect = document.querySelector("#character-select");
   characterSelect.replaceChildren(...data.nodes.map(node => new Option(node.name, node.id)));
   characterSelect.value = data.nodes.some(node => node.id === selectedId) ? selectedId : data.nodes[0].id;
   selectedId = characterSelect.value;
+  configureMxbaiOption();
 
   characterSelect.addEventListener("change", () => {
     selectedId = characterSelect.value;
@@ -51,23 +59,86 @@ function initialise() {
     update();
   });
   document.querySelector("#direction-select").addEventListener("change", update);
+  document.querySelector("#method-path-mode").addEventListener("change", renderMethodComparison);
 
   renderFindings();
   update();
 }
 
+const methodLabels = {
+  tfidf: "TF-IDF cosine",
+  lsa: "LSA cosine",
+  minilm: "MiniLM embedding cosine",
+  mxbai: "mxbai embedding cosine"
+};
+
+function availableMethods() {
+  return mxbaiAvailable ? ["tfidf", "lsa", "minilm", "mxbai"] : ["tfidf", "lsa", "minilm"];
+}
+
+function validateCosineMatrix(matrix, label) {
+  const size = data.nodes.length;
+  if (!Array.isArray(matrix) || matrix.length !== size ||
+      matrix.some(row => !Array.isArray(row) || row.length !== size || row.some(value => !Number.isFinite(value)))) {
+    throw new Error(`${label} similarity matrix has invalid dimensions or non-finite scores.`);
+  }
+  for (let i = 0; i < size; i++) {
+    if (Math.abs(matrix[i][i] - 1) > 1e-5) throw new Error(`${label} cosine matrix diagonal must be 1.`);
+    for (let j = i + 1; j < size; j++) {
+      if (Math.abs(matrix[i][j] - matrix[j][i]) > 1e-5) throw new Error(`${label} cosine matrix is not symmetric.`);
+    }
+  }
+}
+
+function configureMxbaiOption() {
+  const matrix = data.mxbai_similarities;
+  const metadata = data.meta.mxbai;
+  if (metadata?.available === true && Array.isArray(matrix) &&
+      data.meta.similarity_thresholds?.mxbai &&
+      Number.isFinite(data.meta.similarity_thresholds.mxbai.default)) {
+    validateCosineMatrix(matrix, "mxbai");
+    mxbaiAvailable = (metadata.model || metadata.model_id) === "mixedbread-ai/mxbai-embed-large-v1"
+      && metadata.model_revision === "b33106f585b9ce46904ad7443a3b52b7a63e231c";
+  }
+  const available = mxbaiAvailable;
+  const reason = available
+    ? "Validated mxbai similarity matrix."
+    : metadata?.reason || "The validated local similarity matrix is not present.";
+  const option = document.querySelector('#method-select option[value="mxbai"]');
+  option.disabled = !available;
+  option.textContent = available ? "mxbai embedding cosine" : "mxbai embedding cosine · unavailable · see instructions";
+  option.title = available ? `Validated ${data.meta.mxbai.model || data.meta.mxbai.model_id} local matrix.` : reason;
+  document.querySelector("#mxbai-status").textContent = available
+    ? `${data.meta.mxbai.model || data.meta.mxbai.model_id} is available as cached, validated cosine data; the browser does not load or run the model.`
+    : `${reason} To enable it: install requirements-week7-mxbai.txt; run python analysis/week7_mxbai_embeddings.py, then python analysis/preprocess_week7_mxbai.py and python analysis/week7_unexpected.py.`;
+}
+
+function matrixForMethod(method) {
+  if (method === "tfidf") return data.similarities;
+  if (method === "lsa") return data.lsa_similarities;
+  if (method === "minilm") return data.minilm_similarities || data.embedding_similarities;
+  if (method === "mxbai" && availableMethods().includes("mxbai")) return data.mxbai_similarities;
+  throw new Error(`Similarity matrix is unavailable for method "${method}".`);
+}
+
+function defaultThreshold(method) {
+  return data.meta.similarity_thresholds[method].default;
+}
+
 function resetThreshold() {
   const method = document.querySelector("#method-select").value;
   const range = document.querySelector("#threshold-range");
-  const threshold = method === "embedding" ? 0.65 : 0.15;
-  range.min = method === "embedding" ? -1 : 0;
-  range.max = method === "embedding" ? 1 : 0.55;
-  range.value = threshold;
-  document.querySelector("#threshold-output").value = threshold.toFixed(2);
+  const value = defaultThreshold(method);
+  range.min = data.meta.similarity_thresholds[method].min;
+  range.max = data.meta.similarity_thresholds[method].max;
+  range.value = value;
+  document.querySelector("#threshold-output").value = value.toFixed(2);
   document.querySelector("#threshold-note").textContent =
-    method === "embedding"
-      ? "Threshold applies to neural embedding cosine scores. The slider resets to 0.65 when switching methods; cosine scales are not directly comparable."
-      : "Threshold applies to TF-IDF cosine scores. The slider resets to 0.15 when switching methods; cosine scales are not directly comparable.";
+    `Threshold applies only to ${methodLabels[method]}; it resets to ${value.toFixed(2)} when switching methods. Score scales are not directly comparable.`;
+  if (method === "mxbai") {
+    document.querySelector("#mxbai-status").textContent =
+      `mxbai threshold default is the observed all-pair 95th percentile (${value.toFixed(3)}); cached model scores only.`;
+  }
   update();
 }
 
@@ -76,7 +147,7 @@ function neighbourState() {
   const central = data.nodes[centralIndex];
   const threshold = Number(document.querySelector("#threshold-range").value);
   const method = document.querySelector("#method-select").value;
-  const similarities = method === "embedding" ? data.embedding_similarities : data.similarities;
+  const similarities = matrixForMethod(method);
   const direction = document.querySelector("#direction-select").value;
   const textIndices = d3.range(data.nodes.length)
     .filter(index => index !== centralIndex)
@@ -113,11 +184,12 @@ function update() {
     <div class="metric"><b>${shared}</b><span>Shared neighbours</span></div>
     <div class="metric"><b>${jaccard.toFixed(3)}</b><span>Jaccard overlap</span></div>`;
   document.querySelector("#selection-summary").textContent =
-    `${state.central.name} · ${state.method === "embedding" ? "Neural embedding cosine" : "TF-IDF cosine"} · all other pages at or above ${state.threshold.toFixed(2)} similarity · ${state.direction} direct links.`;
+    `${state.central.name} · ${methodLabels[state.method]} · all other pages at or above ${state.threshold.toFixed(2)} similarity · ${state.direction} direct links.`;
   drawGraph(state);
   const selectedNode = state.nodes.find(node => node.id === focusedId) || state.nodes.find(node => node.id === state.central.id);
   focusedId = selectedNode.id;
   renderDetail(selectedNode, state);
+  renderMethodComparison();
 }
 
 function categoryColor(category) {
@@ -134,7 +206,7 @@ function nodeInfo(node, state) {
       ? `${node.category === "both" ? "Text + hyperlink neighbour" : "Direct hyperlink neighbour"} · ${state.linkEdges.some(edge => edge.source === state.central.id && edge.target === node.id) ? `${centerName} → ${node.name}` : ""}${state.linkEdges.some(edge => edge.target === state.central.id && edge.source === node.id) ? `${state.linkEdges.some(edge => edge.source === state.central.id && edge.target === node.id) ? " · " : ""}${node.name} → ${centerName}` : ""}`
       : "Text-only neighbour · no direct link in the selected direction";
   const similarity = node.similarity === null ? "—" : fmt(node.similarity);
-  const methodName = state.method === "embedding" ? "Neural embedding cosine" : "TF-IDF cosine";
+  const methodName = methodLabels[state.method];
   return `${node.name}\n${node.category === "central" ? "Central character" : `${methodName}: ${similarity}`}\n${relation}`;
 }
 
@@ -247,7 +319,7 @@ function renderDetail(node, state) {
     : node.category === "both" ? "TEXT + HYPERLINK"
       : node.category === "text" ? "TEXT ONLY" : "HYPERLINK ONLY";
   const similarity = node.similarity === null ? "Not applicable" : fmt(node.similarity);
-  const methodName = state.method === "embedding" ? "Neural embedding cosine" : "TF-IDF cosine";
+  const methodName = methodLabels[state.method];
   let relation = `${node.in_degree} incoming · ${node.out_degree} outgoing links in the full graph`;
   if (node.id !== center.id && state.linkSet.has(node.index)) {
     const outgoing = state.linkEdges.some(edge => edge.source === center.id && edge.target === node.id);
@@ -258,6 +330,172 @@ function renderDetail(node, state) {
   }
   const excerpt = node.excerpt || "No page excerpt is available.";
   panel.innerHTML = `<h3>${esc(node.name)}</h3><p class="small-note">${status}</p><p><strong>${methodName} to ${esc(center.name)}:</strong> ${similarity}</p><p class="detail-link">${relation}</p><p class="small-note">Full-page excerpt</p><div class="detail-excerpt">${esc(excerpt)}${excerpt.length >= 360 ? "…" : ""}</div>${node.url ? `<p><a class="detail-link" href="${esc(node.url)}" target="_blank" rel="noopener noreferrer">OPEN WIKIPEDIA PAGE ↗</a></p>` : ""}`;
+}
+
+function rankedNeighbours(centralIndex, method) {
+  const matrix = matrixForMethod(method);
+  return d3.range(data.nodes.length).filter(index => index !== centralIndex)
+    .map(index => ({ index, score: matrix[centralIndex][index], id: data.nodes[index].id }))
+    .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+}
+
+function rankCorrelation(first, second) {
+  const firstRanks = new Map(first.map((item, rank) => [item.index, rank + 1]));
+  const secondRanks = new Map(second.map((item, rank) => [item.index, rank + 1]));
+  const count = first.length;
+  const mean = (count + 1) / 2;
+  let covariance = 0, firstVariance = 0, secondVariance = 0;
+  for (const item of first) {
+    const x = firstRanks.get(item.index) - mean;
+    const y = secondRanks.get(item.index) - mean;
+    covariance += x * y;
+    firstVariance += x * x;
+    secondVariance += y * y;
+  }
+  return covariance / Math.sqrt(firstVariance * secondVariance);
+}
+
+function renderMethodComparison() {
+  const centralIndex = data.nodes.findIndex(node => node.id === selectedId);
+  const central = data.nodes[centralIndex];
+  const methods = availableMethods();
+  const rankings = new Map(methods.map(method => [method, rankedNeighbours(centralIndex, method)]));
+  const rankMaps = new Map(methods.map(method => [
+    method, new Map(rankings.get(method).map((item, rank) => [item.index, rank + 1]))
+  ]));
+  const firstCounts = new Map();
+  for (const method of methods) {
+    const first = rankings.get(method)[0];
+    firstCounts.set(first.index, (firstCounts.get(first.index) || 0) + 1);
+  }
+  const maximumFirstCount = Math.max(...firstCounts.values());
+  const firstWinners = [...firstCounts].filter(([, count]) => count === maximumFirstCount);
+  const fiveSets = methods.map(method => new Set(rankings.get(method).slice(0, 5).map(item => item.index)));
+  const pairwiseJaccards = [];
+  for (let i = 0; i < fiveSets.length; i++) {
+    for (let j = i + 1; j < fiveSets.length; j++) {
+      const intersection = [...fiveSets[i]].filter(index => fiveSets[j].has(index)).length;
+      const union = new Set([...fiveSets[i], ...fiveSets[j]]).size;
+      pairwiseJaccards.push(union ? intersection / union : 0);
+    }
+  }
+  const correlations = [];
+  for (let i = 0; i < methods.length; i++) {
+    for (let j = i + 1; j < methods.length; j++) {
+      correlations.push(rankCorrelation(rankings.get(methods[i]), rankings.get(methods[j])));
+    }
+  }
+  const meanJaccard = d3.mean(pairwiseJaccards) || 0;
+  const meanCorrelation = d3.mean(correlations);
+  const topOneText = `${maximumFirstCount}/${methods.length} · ${firstWinners.map(([index]) => data.nodes[index].name).join(", ")}`;
+
+  document.querySelector("#method-agreement-metrics").innerHTML = `
+    <div class="result"><b>${topOneText}</b><span>Top-one agreement · largest matching group: ${maximumFirstCount}/${methods.length} available methods (${(100 * maximumFirstCount / methods.length).toFixed(0)}%)</span></div>
+    <div class="result"><b>${meanJaccard.toFixed(3)}</b><span>Top-five overlap · mean pairwise Jaccard across ${pairwiseJaccards.length} available method pairs</span></div>
+    <div class="result"><b>${meanCorrelation.toFixed(3)}</b><span>Rank stability · mean pairwise Spearman ρ across all ${data.nodes.length - 1} candidates</span></div>`;
+
+  function distances(start, directed, reverse = false) {
+    const queue = [start], result = new Map([[start, 0]]);
+    const neighbours = new Map(data.nodes.map(node => [node.id, []]));
+    for (const edge of data.edges) {
+      if (directed) {
+        neighbours.get(reverse ? edge.target : edge.source).push(reverse ? edge.source : edge.target);
+      } else {
+        neighbours.get(edge.source).push(edge.target);
+        neighbours.get(edge.target).push(edge.source);
+      }
+    }
+    for (let cursor = 0; cursor < queue.length; cursor++) {
+      const current = queue[cursor];
+      for (const next of neighbours.get(current)) {
+        if (result.has(next)) continue;
+        result.set(next, result.get(current) + 1);
+        queue.push(next);
+      }
+    }
+    return result;
+  }
+  const outgoingDistances = distances(central.id, true);
+  const incomingDistances = distances(central.id, true, true);
+  const undirectedDistances = distances(central.id, false);
+  const directNeighbours = new Set();
+  for (const edge of data.edges) {
+    if (edge.source === central.id) directNeighbours.add(edge.target);
+    if (edge.target === central.id) directNeighbours.add(edge.source);
+  }
+
+  const rowMarkup = methods.map(method => {
+    const ranking = rankings.get(method);
+    const top = ranking[0];
+    const score = d3.format(".6f")(top.score);
+    const otherRanks = methods.filter(other => other !== method)
+      .map(other => `${methodLabels[other].replace(" cosine", "")}: #${rankMaps.get(other).get(top.index)}`)
+      .join(" · ");
+    const neighborId = data.nodes[top.index].id;
+    const outgoing = data.edges.some(edge => edge.source === central.id && edge.target === neighborId);
+    const incoming = data.edges.some(edge => edge.target === central.id && edge.source === neighborId);
+    const linkText = outgoing || incoming
+      ? `Direct: ${outgoing ? `${central.name} → ${data.nodes[top.index].name}` : ""}${outgoing && incoming ? " · " : ""}${incoming ? `${data.nodes[top.index].name} → ${central.name}` : ""}`
+      : "No direct link";
+      const directedDistance = [outgoingDistances.get(neighborId), incomingDistances.get(neighborId)]
+      .filter(value => value !== undefined);
+      const pathMode = document.querySelector("#method-path-mode").value;
+      const pathDistance = pathMode === "directed"
+        ? (directedDistance.length ? Math.min(...directedDistance) : null)
+        : (undirectedDistances.get(neighborId) ?? null);
+      const distanceText = `${pathMode === "directed" ? "Directed minimum either way" : "Undirected-projection distance"}: ${pathDistance ?? "unreachable"}`;
+    return `<div class="method-agreement-row"><strong>${esc(methodLabels[method])}</strong><span>${esc(topName(top.index))}<br><span class="method-comparison-score">${score} ${esc(methodLabels[method])}</span></span><span>${esc(otherRanks)}</span><span>${esc(linkText)}<br>${esc(distanceText)}</span></div>`;
+  }).join("");
+  document.querySelector("#method-agreement-table").innerHTML = rowMarkup;
+
+  const appearances = new Map();
+  for (const method of methods) {
+    for (const item of rankings.get(method).slice(0, 5)) {
+      if (!appearances.has(item.index)) appearances.set(item.index, []);
+      appearances.get(item.index).push(method);
+    }
+  }
+  const plot = methods.map(method => {
+    const items = rankings.get(method).slice(0, 5);
+    const cards = items.map((item, rank) => {
+      const node = data.nodes[item.index];
+      const methodsPresent = appearances.get(item.index) || [];
+      const linked = directNeighbours.has(node.id);
+      const classes = [
+        "method-comparison-card",
+        methodsPresent.length > 1 ? "is-consensus" : "",
+        linked ? "is-direct" : "is-unlinked"
+      ].filter(Boolean).join(" ");
+      const label = `${methodLabels[method]}, rank ${rank + 1}: ${node.name}, similarity ${d3.format(".4f")(item.score)}; ${methodsPresent.length} of ${methods.length} methods' top five; ${linked ? "direct hyperlink neighbour" : "not directly linked"}. Select to make this character the centre.`;
+      return `<button type="button" class="${classes}" data-central="${esc(node.id)}" title="${esc(label)}"><b>#${rank + 1} ${esc(node.name)}</b><span>${esc(methodLabels[method])}: ${d3.format(".4f")(item.score)}</span><span>${methodsPresent.length > 1 ? `Top five in ${methodsPresent.length}/${methods.length} methods` : "Only this method’s top five"} · ${linked ? "Direct link" : "No direct link"}</span></button>`;
+    }).join("");
+    return `<div class="method-comparison-row"><strong class="method-comparison-label">${esc(methodLabels[method])}</strong>${cards}</div>`;
+  }).join("");
+  document.querySelector("#method-comparison-plot").innerHTML = `${plot}<div class="method-legend"><span>Teal border: top five in multiple methods</span><span>Gold inset: direct edge to/from centre</span><span>Dashed border: no direct edge</span></div>`;
+  document.querySelectorAll("#method-comparison-plot [data-central]").forEach(button => {
+    button.addEventListener("click", () => {
+      selectedId = button.dataset.central;
+      focusedId = selectedId;
+      document.querySelector("#character-select").value = selectedId;
+      update();
+    });
+  });
+  const consensusIds = [...appearances].filter(([, appearingMethods]) => appearingMethods.length > 1).map(([index]) => index);
+  const networkConsensus = consensusIds.length
+    ? consensusIds.map(index => {
+      const node = data.nodes[index];
+      const isDirect = directNeighbours.has(node.id);
+      const path = [outgoingDistances.get(node.id), incomingDistances.get(node.id)].filter(value => value !== undefined);
+      const distance = document.querySelector("#method-path-mode").value === "directed"
+        ? (path.length ? Math.min(...path) : null)
+        : (undirectedDistances.get(node.id) ?? null);
+      return `${node.name} (${appearances.get(index).length}/${methods.length} top-five lists): ${isDirect ? "direct neighbour" : "no direct link"}; ${document.querySelector("#method-path-mode").value} distance ${distance ?? "unreachable"}`;
+    }).join(" · ")
+    : "No neighbour appears in multiple methods’ top-five lists.";
+  document.querySelector("#method-agreement-note").textContent =
+    `Available methods: ${methods.map(method => methodLabels[method]).join(", ")}. Rankings sort by descending method-specific cosine, with node ID breaking exact ties; Spearman ρ uses all ${data.nodes.length - 1} candidates. Highest top-five network consensus (${document.querySelector("#method-path-mode").value} definition): ${networkConsensus}. Agreement is evidence of ranking stability in this corpus, not proof that a neighbour is semantically correct.`;
+
+  function topName(index) { return data.nodes[index].name; }
 }
 
 function renderFindings() {

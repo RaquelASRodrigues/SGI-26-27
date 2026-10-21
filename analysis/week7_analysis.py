@@ -18,6 +18,8 @@ import torch.nn.functional as functional
 from transformers import AutoModel, AutoTokenizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.decomposition import TruncatedSVD
+from sklearn.preprocessing import normalize
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
@@ -29,6 +31,12 @@ MODEL_REVISION = "fa97f6e7cb1a59073dff9e6b13e2715cf7475ac9"
 MAX_SEQUENCE_LENGTH = 256
 EMBEDDING_BATCH_SIZE = 32
 EMBEDDING_CACHE = DATA / "week7_embeddings.npz"
+LSA_CACHE = DATA / "week7_lsa_vectors.npz"
+LSA_DIMENSIONS = 100
+LSA_ITERATIONS = 7
+MXBAI_MODEL_ID = "mixedbread-ai/mxbai-embed-large-v1"
+MXBAI_MODEL_REVISION = "b33106f585b9ce46904ad7443a3b52b7a63e231c"
+MXBAI_MATRIX_CACHE = DATA / "week7_mxbai_similarities.npz"
 
 
 def read_tsv(path):
@@ -125,6 +133,65 @@ def encode_pages(documents, ids):
     return embeddings
 
 
+def reduce_lsa(matrix, ids, corpus_hash):
+    if LSA_CACHE.exists():
+        with np.load(LSA_CACHE, allow_pickle=False) as cached:
+            cache_keys = {"node_ids", "corpus_sha256", "dimensions", "seed", "vectors"}
+            if (
+                cache_keys.issubset(cached.files)
+                and cached["node_ids"].tolist() == ids
+                and cached["corpus_sha256"].item() == corpus_hash
+                and int(cached["dimensions"]) == LSA_DIMENSIONS
+                and int(cached["seed"]) == SEED
+            ):
+                print(f"Loaded cached {LSA_DIMENSIONS}-dimension LSA vectors for {len(ids)} pages.")
+                return cached["vectors"]
+    dimensions = min(LSA_DIMENSIONS, len(ids) - 1, matrix.shape[1] - 1)
+    if dimensions < 2:
+        raise ValueError("The corpus is too small for the configured LSA dimensionality.")
+    svd = TruncatedSVD(n_components=dimensions, n_iter=LSA_ITERATIONS, random_state=SEED)
+    vectors = normalize(svd.fit_transform(matrix), norm="l2", axis=1)
+    np.savez_compressed(
+        LSA_CACHE,
+        node_ids=np.asarray(ids),
+        corpus_sha256=np.asarray(corpus_hash),
+        dimensions=np.asarray(dimensions),
+        seed=np.asarray(SEED),
+        vectors=vectors.astype(np.float32),
+    )
+    print(f"Computed and cached {dimensions}-dimension LSA vectors for {len(ids)} pages.")
+    return vectors
+
+
+def load_mxbai_matrix(ids):
+    if not MXBAI_MATRIX_CACHE.exists():
+        return None, {
+            "available": False,
+            "model": MXBAI_MODEL_ID,
+            "model_revision": MXBAI_MODEL_REVISION,
+            "reason": (
+                "No validated local similarity matrix is present. Generate it with "
+                "analysis/week7_mxbai_embeddings.py and analysis/preprocess_week7_mxbai.py; "
+                "the website never runs the model."
+            ),
+        }
+    with np.load(MXBAI_MATRIX_CACHE, allow_pickle=False) as cached:
+        cached_ids = cached["node_ids"].tolist()
+        similarities = np.asarray(cached["similarities"], dtype=np.float32)
+        metadata = json.loads(cached["metadata_json"].item())
+    if cached_ids != ids:
+        raise ValueError("mxbai similarity node ordering does not match Week 1.")
+    if metadata.get("model_id") != MXBAI_MODEL_ID or metadata.get("model_revision") != MXBAI_MODEL_REVISION:
+        raise ValueError("mxbai matrix metadata does not match the required pinned model.")
+    if similarities.shape != (len(ids), len(ids)) or not np.isfinite(similarities).all():
+        raise ValueError("mxbai similarity matrix has invalid dimensions or values.")
+    if not np.allclose(similarities, similarities.T, atol=1e-6):
+        raise ValueError("mxbai similarity matrix is not symmetric.")
+    if not np.allclose(np.diag(similarities), 1, atol=1e-6):
+        raise ValueError("mxbai similarity matrix diagonal must be 1.")
+    return similarities, {**metadata, "available": True, "model": MXBAI_MODEL_ID}
+
+
 def main():
     nodes = read_tsv(DATA / "week1_nodes.tsv")
     by_id = {row["node_id"]: row for row in nodes}
@@ -142,11 +209,29 @@ def main():
     vectorizer = TfidfVectorizer(stop_words="english", sublinear_tf=True, norm="l2")
     matrix = vectorizer.fit_transform(documents)
     similarities = cosine_similarity(matrix).astype(np.float64)
-    np.fill_diagonal(similarities, 0)
+    np.fill_diagonal(similarities, 1)
+    corpus_hash = hashlib.sha256("\n".join(documents).encode("utf-8")).hexdigest()
+    lsa_vectors = reduce_lsa(matrix, ids, corpus_hash)
+    lsa_similarities = lsa_vectors @ lsa_vectors.T
+    np.clip(lsa_similarities, -1, 1, out=lsa_similarities)
+    np.fill_diagonal(lsa_similarities, 1)
     embeddings = encode_pages(documents, ids)
     embedding_similarities = embeddings @ embeddings.T
     np.clip(embedding_similarities, -1, 1, out=embedding_similarities)
-    np.fill_diagonal(embedding_similarities, 0)
+    np.fill_diagonal(embedding_similarities, 1)
+    mxbai_similarities, mxbai_metadata = load_mxbai_matrix(ids)
+    pair_indices = np.triu_indices(len(ids), k=1)
+    similarity_thresholds = {
+        "tfidf": {"min": 0, "max": 0.55, "default": 0.15},
+        "lsa": {
+            "min": -1,
+            "max": 1,
+            "default": float(np.quantile(lsa_similarities[pair_indices], 0.95)),
+        },
+        "minilm": {"min": -1, "max": 1, "default": 0.65},
+    }
+    if mxbai_similarities is not None:
+        similarity_thresholds["mxbai"] = mxbai_metadata["thresholds"]
 
     with (DATA / "week1_edges.tsv").open(encoding="utf-8-sig", newline="") as file:
         edges = [
@@ -160,7 +245,13 @@ def main():
     graph.add_edges_from(edges)
 
     ranks = np.argsort(-similarities, axis=1)
-    top_sets = [set(ranks[i, :5].tolist()) for i in range(len(ids))]
+    top_sets = [
+        set(sorted(
+            (index for index in ranks[i] if index != i),
+            key=lambda index: (-similarities[i, index], ids[index]),
+        )[:5])
+        for i in range(len(ids))
+    ]
     overlap_rows = []
     text_only_rows = []
     neighbour_sets = []
@@ -219,7 +310,10 @@ def main():
         i = id_to_index[node_id]
         top_method_neighbors[node_id] = [
             {"id": ids[j], "name": by_id[ids[j]]["name"], "similarity": float(similarities[i, j])}
-            for j in ranks[i, :5]
+            for j in sorted(
+                (index for index in ranks[i] if index != i),
+                key=lambda index: (-similarities[i, index], ids[index]),
+            )[:5]
         ]
 
     payload = {
@@ -228,6 +322,14 @@ def main():
             "directed": True, "isolates": len(list(nx.isolates(graph))),
             "weak_components": nx.number_weakly_connected_components(graph),
             "text_method": "TF-IDF with English stop-word removal, sublinear term frequency, unigrams, and L2 normalization",
+            "lsa": {
+                "method": "TruncatedSVD on the same L2-normalized TF-IDF matrix; reduced document vectors are L2-normalized before cosine similarity.",
+                "dimensions": lsa_vectors.shape[1],
+                "seed": SEED,
+                "iterations": LSA_ITERATIONS,
+                "cache": str(LSA_CACHE.relative_to(ROOT)),
+            },
+            "similarity_thresholds": similarity_thresholds,
             "embedding": {
                 "model": MODEL_ID,
                 "revision": MODEL_REVISION,
@@ -236,6 +338,9 @@ def main():
                 "chunking": f"All model tokens are retained in non-overlapping chunks of at most {MAX_SEQUENCE_LENGTH - 2} content tokens; each chunk gets model special tokens. Chunk vectors are combined as a content-token-weighted mean.",
                 "max_sequence_length": MAX_SEQUENCE_LENGTH,
                 "cache": str(EMBEDDING_CACHE.relative_to(ROOT)),
+            },
+            "mxbai": {
+                **mxbai_metadata,
             },
             "null": {
                 "definition": "Mean TF-IDF cosine similarity across the fixed supplied directed edges, compared with 999 random permutations of page-to-node assignments.",
@@ -261,7 +366,13 @@ def main():
         ],
         "edges": [{"source": source, "target": target} for source, target in edges],
         "similarities": np.round(similarities, 6).tolist(),
+        "lsa_similarities": np.round(lsa_similarities, 6).tolist(),
         "embedding_similarities": np.round(embedding_similarities, 6).tolist(),
+        "minilm_similarities": np.round(embedding_similarities, 6).tolist(),
+        **(
+            {"mxbai_similarities": np.round(mxbai_similarities, 6).tolist()}
+            if mxbai_similarities is not None else {}
+        ),
         "analysis": {
             "top_overlap": highlights[:8],
             "top_overlap_neighbours": shared_examples,

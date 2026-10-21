@@ -50,12 +50,96 @@
       .result { border-top:1px solid var(--line); padding:14px 0; }
       .result b { display:block; color:var(--lilac); font:clamp(22px,3vw,34px) var(--display); }
       .result span { color:var(--muted); font:9px/1.5 var(--mono); text-transform:uppercase; }
+      .method-agreement { margin-top:24px; padding-top:16px; border-top:1px solid var(--line); }
+      .method-agreement-table { display:grid; gap:7px; margin:12px 0 18px; }
+      .method-agreement-row { display:grid; grid-template-columns:minmax(130px,1fr) minmax(140px,1.4fr) minmax(240px,2fr) minmax(160px,1.4fr); gap:10px; align-items:center; border-top:1px solid var(--line); padding:10px 0; color:#d8cddd; font:10px/1.5 var(--mono); }
+      .method-agreement-row strong { color:var(--lilac); }
+      .method-comparison-plot { display:grid; gap:8px; margin:14px 0; }
+      .method-comparison-row { display:grid; grid-template-columns:145px repeat(5,minmax(0,1fr)); gap:8px; align-items:stretch; }
+      .method-comparison-label { align-self:center; color:var(--muted); font:9px/1.5 var(--mono); }
+      .method-comparison-card { min-width:0; border:1px solid var(--line); background:#110d19; color:var(--paper); text-align:left; padding:9px; font:9px/1.5 var(--mono); overflow-wrap:anywhere; }
+      .method-comparison-card.is-consensus { border-color:var(--cyan); }
+      .method-comparison-card.is-direct { box-shadow:inset 0 0 0 1px rgba(242,184,75,.5); }
+      .method-comparison-card.is-unlinked { border-style:dashed; }
+      .method-comparison-card b { display:block; font:11px/1.4 var(--body); }
+      .method-comparison-card span { display:block; color:var(--muted); margin-top:4px; }
+      .method-comparison-card.is-consensus b { color:var(--cyan); }
+      .method-comparison-card.is-direct span { color:#f2b84b; }
+      .method-comparison-card.is-unlinked span { color:#f1a4c0; }
+      .method-legend { display:flex; flex-wrap:wrap; gap:8px 16px; color:var(--muted); font:9px/1.5 var(--mono); }
       .analysis-card { border-left:3px solid var(--magenta); padding:15px 18px; background:#110d19; margin:14px 0; }
       .analysis-card strong { color:var(--paper); }
       .analysis-list { padding-left:20px; color:#d8cddd; line-height:1.7; }
       .loading,.widget-error { color:var(--muted); font:11px/1.5 var(--mono); }
       .widget-error { color:var(--magenta); }
       #tooltip { position:fixed; z-index:5; max-width:280px; padding:9px 11px; background:#0a090d; border:1px solid var(--lilac); color:var(--paper); font:10px/1.5 var(--mono); pointer-events:none; opacity:0; }
+      .unexpected-intro { max-width:820px; color:#c9bdcc; line-height:1.65; }
+      .unexpected-card { border:1px solid rgba(189,125,255,.42); background:#110d19; padding:18px; margin-top:22px; }
+      .unexpected-controls { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; align-items:end; }
+      .unexpected-control { display:grid; gap:7px; color:var(--muted); font:10px/1.5 var(--mono); }
+      .unexpected-toggle-control { display:flex; align-items:center; gap:8px; min-height:36px; color:var(--paper); font:10px/1.5 var(--mono); }
+      .unexpected-toggle-control input { accent-color:var(--magenta); }
+      .unexpected-select,.unexpected-range { width:100%; min-width:0; accent-color:var(--magenta); }
+      .unexpected-select { border:1px solid rgba(189,125,255,.55); background:#0d0a12; color:var(--paper); font:11px var(--mono); padding:10px; }
+      .unexpected-select:focus-visible,.unexpected-range:focus-visible,.unexpected-toggle-control input:focus-visible,.unexpected-more:focus-visible,.unexpected-pair:focus-visible { outline:2px solid var(--magenta); outline-offset:3px; }
+      .unexpected-summary { color:var(--muted); font:10px/1.6 var(--mono); margin:14px 0; }
+      .unexpected-isolate-summary { color:var(--muted); font:9px/1.6 var(--mono); margin:9px 0 14px; }
+      .unexpected-list { display:grid; gap:7px; }
+      .unexpected-pair { width:100%; display:grid; grid-template-columns:minmax(0,1fr) 125px 125px 115px; gap:14px; align-items:center; border:1px solid rgba(189,125,255,.2); background:#0d0a12; color:var(--paper); text-align:left; padding:12px 14px; cursor:pointer; }
+      .unexpected-pair:hover,.unexpected-pair.is-selected { border-color:var(--magenta); background:rgba(232,78,131,.08); }
+      .unexpected-pair-names { font:13px/1.45 var(--body); }
+      .unexpected-pair-meta { color:var(--lilac); font:10px/1.5 var(--mono); }
+      .unexpected-pair-similarity { color:var(--lilac); }
+      .unexpected-pair-zscore { display:block; margin-top:4px; color:var(--teal); font:9px/1.5 var(--mono); }
+      .unexpected-pair-zscore.is-negative { color:#f1a4c0; }
+      .unexpected-pair-zscore.is-na { color:var(--muted); }
+      .unexpected-pair-why { color:var(--muted); font:9px/1.5 var(--mono); text-align:right; }
+      .unexpected-more { border:1px solid rgba(189,125,255,.55); background:transparent; color:var(--paper); cursor:pointer; padding:9px 12px; font:10px var(--mono); margin-top:12px; }
+      .unexpected-more:hover { background:var(--lilac); color:var(--ink); }
+      .unexpected-legend { display:flex; flex-wrap:wrap; gap:8px 18px; margin:10px 0 0; color:var(--muted); font:10px/1.5 var(--mono); }
+      .unexpected-legend span { display:inline-flex; align-items:center; gap:7px; }
+      .unexpected-dot { display:inline-block; width:10px; height:10px; border-radius:50%; }
+      .unexpected-kpis { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:10px; margin:20px 0 14px; }
+      .unexpected-kpi { border-top:1px solid var(--line); padding:11px 0; min-width:0; }
+      .unexpected-kpi b { display:block; color:var(--lilac); font:clamp(17px,2vw,27px) var(--display); overflow-wrap:anywhere; }
+      .unexpected-kpi span { display:block; color:var(--muted); font:8px/1.55 var(--mono); text-transform:uppercase; }
+      .unexpected-path-layout { display:grid; grid-template-columns:minmax(0,1fr) 250px; gap:12px; }
+      #unexpected-path-svg { display:block; width:100%; height:300px; border:1px solid rgba(189,125,255,.4); background:#0d0a12; }
+      .unexpected-path-edge { fill:none; stroke:rgba(33,243,198,.8); stroke-width:2; }
+      .unexpected-path-node { stroke:#0d0a12; stroke-width:2; cursor:pointer; }
+      .unexpected-path-label { fill:var(--paper); font:9px var(--mono); }
+      .unexpected-path-note { color:var(--muted); font:10px/1.6 var(--mono); }
+      .unexpected-inspect { min-height:170px; border-left:3px solid var(--magenta); padding:12px; background:rgba(189,125,255,.06); color:#d8cddd; font-size:11px; line-height:1.55; overflow-wrap:anywhere; }
+      .unexpected-inspect h4 { margin:0 0 8px; color:var(--paper); font:16px var(--display); }
+      .unexpected-explanation { border-left:3px solid var(--magenta); padding:14px 16px; background:#110d19; margin-top:15px; }
+      .unexpected-explanation h3 { margin:0 0 12px; color:var(--paper); }
+      .unexpected-term { border-top:1px solid var(--line); padding:12px 0; }
+      .unexpected-term-head { display:flex; flex-wrap:wrap; align-items:center; gap:7px; color:var(--lilac); font:12px var(--mono); }
+      .unexpected-term-value { color:var(--muted); font-size:9px; }
+      .unexpected-tag { border:1px solid rgba(232,78,131,.55); color:#f1a4c0; padding:2px 5px; font:8px var(--mono); }
+      .unexpected-contexts { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:8px; }
+      .unexpected-context { color:#d8cddd; font:11px/1.55 var(--body); }
+      .unexpected-context small { display:block; margin-bottom:4px; color:var(--muted); font:8px var(--mono); text-transform:uppercase; }
+      .unexpected-null-note { border-top:1px solid var(--line); margin-top:15px; padding-top:12px; color:var(--muted); font:10px/1.65 var(--mono); }
+      .unexpected-analysis { color:#c9bdcc; line-height:1.65; }
+      .unexpected-error { color:var(--magenta); font:11px/1.55 var(--mono); }
+      @media(max-width:900px) {
+        .method-agreement-row { grid-template-columns:1fr 1fr; }
+        .method-comparison-row { grid-template-columns:110px repeat(5,minmax(0,1fr)); gap:5px; }
+        .unexpected-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .unexpected-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); }
+        .unexpected-path-layout { grid-template-columns:1fr; }
+      }
+      @media(max-width:560px) {
+        .method-agreement-row { grid-template-columns:1fr; gap:4px; }
+        .method-comparison-row { grid-template-columns:1fr 1fr; }
+        .method-comparison-label { grid-column:1/-1; padding-top:8px; }
+        .unexpected-controls,.unexpected-contexts { grid-template-columns:1fr; }
+        .unexpected-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .unexpected-pair { grid-template-columns:1fr; gap:4px; }
+        .unexpected-pair-why { text-align:left; }
+        #unexpected-path-svg { height:250px; }
+      }
       @media(max-width:820px) {
         .post-page { padding:60px 8vw 90px; }
         .control-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -86,8 +170,10 @@
           <p>A page can describe characters with similar powers, teams, or story arcs without linking to them. Conversely, a page can link to another character for a brief plot connection that leaves little shared language. Comparing text with links lets us see where these two kinds of relationship agree—and where the encyclopedia’s prose and its navigation diverge.</p>
           <p>We use the 303 character pages supplied for this project and the Week 1 directed link network. Text neighbours are every other page whose cosine similarity meets the selected threshold. Hyperlink neighbours are pages joined to the selected character by a <strong>single direct edge</strong>; incoming links point to the selected page, outgoing links leave it. A multi-step path does not count as a hyperlink neighbour.</p>
           <div class="analysis-card"><strong>TF-IDF cosine.</strong> TF-IDF weights a page’s words by how frequent they are on that page and how uncommon they are across the corpus; cosine similarity compares the resulting vectors. It is fast and reproducible, but mostly captures shared vocabulary—not meaning expressed with different words. Stopwords are removed, term frequency is sublinear, and vectors are L2-normalized.</div>
-          <div class="analysis-card"><strong>Neural embedding cosine.</strong> The locally run <code>sentence-transformers/all-MiniLM-L6-v2</code> model encodes context into 384-dimensional vectors. We mean-pool its last-layer content-token representations and L2-normalize each page vector before cosine comparison. The default 256-token model input limit is handled by splitting every full page into non-overlapping chunks of at most 254 content tokens; all chunk token representations contribute, weighted by the number of content tokens. No page is silently truncated. This captures contextual similarities as well as shared wording, but chunk boundaries lose some long-range context.</div>
-          <p>Both methods use the same full text with whitespace collapsed. TF-IDF applies its documented stop-word and weighting choices; embeddings retain the model tokenizer’s full token stream. Their scores have different scales and must be interpreted within their own method, not compared numerically.</p>
+          <div class="analysis-card"><strong>LSA cosine.</strong> We apply TruncatedSVD with 100 latent dimensions, 7 iterations and random seed 261021 to the same TF-IDF document-term matrix. The reduced page vectors are L2-normalized before cosine similarity. LSA can capture broader co-occurrence structure, but the chosen dimensionality and corpus shape its representation.</div>
+          <div class="analysis-card"><strong>MiniLM embedding cosine.</strong> The locally run <code>sentence-transformers/all-MiniLM-L6-v2</code> model encodes context into 384-dimensional vectors. We mean-pool its last-layer content-token representations and L2-normalize each page vector before cosine comparison. The default 256-token model input limit is handled by splitting every full page into non-overlapping chunks of at most 254 content tokens; all chunk token representations contribute, weighted by the number of content tokens. No page is silently truncated. This captures contextual similarities as well as shared wording, but chunk boundaries lose some long-range context.</div>
+          <div class="analysis-card"><strong>mxbai embedding cosine.</strong> <code>mixedbread-ai/mxbai-embed-large-v1</code> is enabled only when its pinned model output and validated local cosine matrix exist. In a suitably provisioned environment, install <code>requirements-week7-mxbai.txt</code>, then run <code>python analysis/week7_mxbai_embeddings.py</code>, <code>python analysis/preprocess_week7_mxbai.py</code>, and <code>python analysis/week7_unexpected.py</code>. The website consumes cached matrices only; it never downloads or runs a model. The embedding script records the model revision, uses its configured CLS pooling and L2 normalization, chunks every page within the model context limit, then computes a token-weighted normalized page vector.</div>
+          <p>All available methods use the same 303 full pages and node order. TF-IDF and LSA share the stop-word-filtered, sublinear unigram TF-IDF matrix; neural embeddings retain the full tokenizer stream and use the documented chunk-weighted aggregation. Each method has its own threshold. Scores have different scales and must not be compared numerically across methods.</p>
         </section>
         <section aria-labelledby="explorer-heading">
           <h2 id="explorer-heading">Choose a character<span>.</span></h2>
@@ -100,7 +186,9 @@
               <label class="control" for="method-select">TEXT SIMILARITY
                 <select class="week7-select" id="method-select">
                   <option value="tfidf">TF-IDF cosine</option>
-                  <option value="embedding">Neural embedding cosine</option>
+                  <option value="lsa">LSA cosine</option>
+                  <option value="minilm">MiniLM embedding cosine</option>
+                  <option value="mxbai" disabled title="Generate and validate the local mxbai matrix before use.">mxbai embedding cosine · unavailable · see instructions</option>
                 </select>
               </label>
               <label class="control" for="threshold-range">MINIMUM TEXT SIMILARITY <output id="threshold-output">0.15</output>
@@ -108,6 +196,7 @@
               </label>
             </div>
             <p class="small-note" id="threshold-note">Threshold uses the selected method’s cosine scores; TF-IDF and embedding scores are not directly comparable.</p>
+            <p class="small-note" id="mxbai-status" aria-live="polite">mxbai is unavailable until validated local embeddings and a cosine matrix are generated.</p>
             <div class="control-grid" style="grid-template-columns:minmax(220px,1fr)">
               <label class="control" for="direction-select">DIRECT HYPERLINK NEIGHBOURS
                 <select class="week7-select" id="direction-select">
@@ -138,6 +227,17 @@
               <aside id="character-detail" class="detail" aria-live="polite"><p class="small-note">Choose a character to inspect its neighbours.</p></aside>
             </div>
           </div>
+          <section class="method-agreement" aria-labelledby="method-agreement-heading">
+            <h3 id="method-agreement-heading">How sure was the number one?</h3>
+            <p class="small-note">For the selected central character, each available method ranks the other 302 pages independently. Similarity values are shown within their method only. Hover or focus a neighbour for its method-specific score; select a card to make that character the new centre.</p>
+            <label class="control" for="method-path-mode">PATH DEFINITION FOR TOP-NEIGHBOUR NETWORK DISTANCE
+              <select class="week7-select" id="method-path-mode"><option value="directed">Directed · shortest travel either way</option><option value="undirected">Undirected projection</option></select>
+            </label>
+            <div class="result-grid" id="method-agreement-metrics" aria-live="polite"><div class="loading">Comparing rankings…</div></div>
+            <div id="method-agreement-table" class="method-agreement-table" aria-live="polite"></div>
+            <div id="method-comparison-plot" class="method-comparison-plot" role="group" aria-label="Method-specific top-five neighbour comparison"></div>
+            <p class="small-note" id="method-agreement-note"></p>
+          </section>
         </section>
         <section aria-labelledby="findings-heading">
           <h2 id="findings-heading">Where the maps meet<span>.</span></h2>
@@ -153,11 +253,70 @@
           <p>TF-IDF is sensitive to repeated names, team labels, and formulaic article language. Cosine values depend on this corpus and preprocessing; a TF-IDF score should not be compared numerically with an embedding score from a different model. Page lengths and editorial coverage vary, and links reflect article conventions as well as character relationships. The text set also contains disconnected and isolated pages: they still receive text rankings, but have no direct hyperlink neighbours in the corresponding direction.</p>
           <p>In this dataset, text similarity and direct links are related on average, yet they are not interchangeable. Some characters share nearly all of their top-ranked text neighbours with their direct links, while other high-ranking text pairs have no direct edge and some actual links connect pages with little shared vocabulary. The explorer makes those differences inspectable character by character; it does not turn either kind of similarity into a definitive measure of fictional closeness.</p>
         </section>
+        <section id="unexpected-connections" aria-labelledby="unexpected-heading">
+          <h2 id="unexpected-heading">THE UNEXPECTED CONNECTIONS<span>.</span></h2>
+          <p class="unexpected-intro"><em>Semantically close. Structurally distant.</em> A high text score paired with a long path—or no path at all—is a descriptive mismatch, not automatically a statistically surprising relationship. This module ranks actual pairs by similarity and separation, shows both directed travel distances, and compares a fixed top-similarity cohort with directed degree-preserving rewires. The null supports an aggregate test only; it does not assign significance to individual pairs.</p>
+          <div class="unexpected-card">
+            <div class="unexpected-controls">
+              <label class="unexpected-control" for="unexpected-method">SIMILARITY METHOD
+                <select class="unexpected-select" id="unexpected-method"><option value="tfidf">TF-IDF cosine</option><option value="lsa">LSA cosine</option><option value="minilm">MiniLM embedding cosine</option><option value="mxbai" disabled title="Generate and validate the local mxbai matrix before use.">mxbai embedding cosine · unavailable · see instructions</option></select>
+              </label>
+              <label class="unexpected-control" for="unexpected-threshold">MINIMUM TEXT SIMILARITY <output id="unexpected-threshold-output">0.15</output>
+                <input class="unexpected-range" id="unexpected-threshold" type="range" min="0" max="0.55" step="0.01" value="0.15" />
+              </label>
+              <label class="unexpected-control" for="unexpected-distance">MINIMUM OBSERVED PATH DISTANCE <output id="unexpected-distance-output">3</output>
+                <input class="unexpected-range" id="unexpected-distance" type="range" min="1" max="8" step="1" value="3" />
+              </label>
+              <label class="unexpected-control" for="unexpected-path-mode">PATH DEFINITION
+                <select class="unexpected-select" id="unexpected-path-mode"><option value="directed">Directed · shortest travel either way</option><option value="undirected">Undirected projection</option></select>
+              </label>
+              <label class="unexpected-toggle-control" for="unexpected-include-isolates" title="An observed isolate has zero in-degree and zero out-degree.">
+                <input type="checkbox" id="unexpected-include-isolates" checked />
+                <span>Include isolated nodes</span>
+              </label>
+              <label class="unexpected-toggle-control" for="unexpected-include-unreachable" title="Reachability follows the selected directed or undirected path definition.">
+                <input type="checkbox" id="unexpected-include-unreachable" checked />
+                <span>Include unreachable pairs</span>
+              </label>
+            </div>
+            <p class="unexpected-null-note">An isolate has zero observed in-degree and out-degree (also degree zero in the undirected projection): it has no hyperlink path to other nodes, but its page can still be textually similar. This toggle filters the ranked pair population only; it never removes nodes from the network or the original explorer. Including isolates changes which pairs are ranked and may elevate textually similar but structurally disconnected pairs; it does not imply a directional bias.</p>
+            <p class="unexpected-isolate-summary" id="unexpected-isolate-summary" aria-live="polite">Comparing the eligible pair populations…</p>
+            <p class="unexpected-isolate-summary" id="unexpected-reachability-summary" aria-live="polite">Counting reachable and unreachable pairs…</p>
+            <p class="unexpected-summary" id="unexpected-filter-summary">Loading all distinct character pairs and path results…</p>
+            <div class="unexpected-list" id="unexpected-pair-list" aria-live="polite"><p class="loading">Loading pair ranking…</p></div>
+            <button class="unexpected-more" id="unexpected-more" type="button" hidden>SHOW 50 MORE PAIRS</button>
+            <p class="unexpected-null-note"><strong>Z-score</strong> is the observed pair’s path distance minus its mean finite distance across the degree-preserving null graphs, divided by the sample standard deviation. It uses the selected directed/undirected path definition; the text method and threshold only determine which pairs appear and do not enter the path statistic. Positive values are longer than the null expectation; negative values are shorter. It is conditional on finite null paths and descriptive, not a significance test. N/A means the observed pair is unreachable, or its null distribution has too few finite samples or zero variance. Ranking itself remains unchanged: unreachable pairs first, then longer observed paths, then higher text similarity. Aggregate empirical p-values and Holm corrections are reported separately.</p>
+          </div>
+          <h3>Follow the hyperlink path</h3>
+          <p class="unexpected-analysis">Select a ranked pair to inspect its shortest route. Directed mode chooses the shorter valid direction between the two characters; if neither direction has a path, it says so. Undirected mode uses the underlying undirected projection, so a drawn step may run against the actual arrow direction. When multiple shortest paths exist, breadth-first search with node IDs sorted alphabetically makes the displayed route deterministic.</p>
+          <div class="unexpected-kpis" id="unexpected-kpis" aria-live="polite">
+            <div class="unexpected-kpi"><b>—</b><span>Semantic similarity</span></div><div class="unexpected-kpi"><b>—</b><span>Shortest path</span></div><div class="unexpected-kpi"><b>—</b><span>Direct connection</span></div><div class="unexpected-kpi"><b>—</b><span>Intermediate characters</span></div><div class="unexpected-kpi"><b>—</b><span>Pair null reachability</span></div><div class="unexpected-kpi"><b>—</b><span>Pair path z-score</span></div><div class="unexpected-kpi"><b>—</b><span>Shared informative terms</span></div>
+          </div>
+          <div class="unexpected-legend" aria-label="Shortest path graph legend">
+            <span><i class="unexpected-dot" style="background:#e84e83"></i>Selected endpoints</span><span><i class="unexpected-dot" style="background:#21f3c6"></i>Intermediate characters</span><span>→ observed edge direction</span>
+          </div>
+          <div class="unexpected-path-layout">
+            <div><svg id="unexpected-path-svg" role="img" aria-label="Shortest hyperlink path between selected characters"></svg><p class="unexpected-path-note" id="unexpected-path-note">Select a ranked pair to draw its route.</p></div>
+            <aside class="unexpected-inspect" id="unexpected-node-inspect" aria-live="polite">Hover over or select a path node to inspect its page and degree.</aside>
+          </div>
+          <div class="unexpected-explanation" id="unexpected-explanation" aria-live="polite">
+            <h3>WHY ARE THESE CHARACTERS SIMILAR?</h3><p class="loading">Select a pair to inspect shared terms and page contexts.</p>
+          </div>
+          <p class="unexpected-null-note" id="unexpected-null-detail">Loading degree-preserving null-model results…</p>
+          <h3>What the null can—and cannot—tell us</h3>
+          <p class="unexpected-analysis" id="unexpected-interpretation">Loading aggregate results across the most text-similar pairs…</p>
+          <p class="unexpected-analysis">The null uses 100 seeded directed target-swapped graphs (seed 721026), each with five accepted swaps per observed edge. It rejects self-loops and duplicate edges, fixes the 303-node set, and verifies every node’s in-degree and out-degree after each graph. It recalculates reachability and shortest paths separately for every randomized network. It does not preserve components, reachability, or shortest-path distances; short swap chains may not fully mix the constrained graph space. The aggregate cohort is the top 1% of eligible unordered pairs for each available text method and isolate setting; its finite mean path and unreachable fraction are compared with each randomized distribution, with Holm correction across all aggregate tests. Pair-specific null reachability frequencies are shown separately from conditional finite-distance z-scores; no pair-specific empirical p-values are implemented. These z-scores are descriptive and are not pairwise significance tests. A long path for one selected pair is not itself a significant result, and neither text similarity nor the rewiring comparison establishes causation.</p>
+          <h3>What the strongest pairs reveal</h3>
+          <p class="unexpected-analysis"><strong>Blue Eagle (character) and Moonglow (comics)</strong> score 0.252 by TF-IDF, with no directed route in either direction; the undirected projection connects them in three edges. The highest shared TF-IDF terms include <em>squadron</em> (0.05306 contribution) and <em>overmind</em> (0.02522). Both page excerpts identify the Squadron Supreme and describe the Overmind story, so their text match reflects a shared team/story context even though directed travel between their pages is impossible.</p>
+          <p class="unexpected-analysis"><strong>Backhand (character) and Blackthorn (character)</strong> score 0.259 by TF-IDF and have no direct edge, but the directed shortest path is three edges in both directions: Backhand → Vyking → Snapdragon (Morituri) → Blackthorn. Both pages explicitly identify the characters with Strikeforce: Morituri; <em>morituri</em> contributes 0.05709 to their TF-IDF cosine. This is a clear example of textual agreement with indirect, rather than direct, network connection.</p>
+          <p class="unexpected-analysis"><strong>Happy Sam Sawyer and Junior Juniper</strong> have no path even in the undirected projection. Their TF-IDF score is 0.188 and their embedding score is 0.621; both descriptions mention Sgt. Fury and the Howling Commandos, reflected by shared terms <em>sgt</em>, <em>howling</em>, <em>commandos</em>, and <em>fury</em>. The two scores come from different methods and are not numerically comparable. In the embedding results, <strong>Justice (New Universe) and The Witness (character)</strong> score 0.648, have no directed route, and are five edges apart in the undirected projection; shared contextual words such as <em>paranormal</em> are clues, not a word-level explanation of the embedding.</p>
+        </section>
       </article>
     </main>
     <footer class="site-footer"><div class="footer-brand">N<span>/</span>A</div><p>Made with data, curiosity<br />and too many arrows.</p><div class="footer-meta">Social Graphs and Interactions · 2026—27<br /><a href="../index.html">BACK TO HOME ↑</a></div></footer>
     <div id="tooltip" role="tooltip"></div>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script src="week7.js"></script>
+    <script src="week7_unexpected.js"></script>
   </body>
 </html>
